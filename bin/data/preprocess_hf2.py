@@ -17,6 +17,8 @@ dat_dir = '/scratch/gpfs/chhahn/haloflow/hf2/'
 
 # read subhalos 
 subhalo = Table.read(os.path.join(dat_dir, 'HaloFlow_%s-1_Subhalos.csv' % sim))
+# only keep centrals 
+subhal = subhalo[subhalo['GroupFirstSub'] == 1] 
 print('%i subhalos' % len(subhalo))
 
 # read photometry and morphology 
