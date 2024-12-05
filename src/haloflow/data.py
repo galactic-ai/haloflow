@@ -15,6 +15,50 @@ else:
     raise ValueError
 
 
+def hf2_centrals(dataset, obs, sim='TNG100', version=1): 
+    ''' Read Y and X data from subhalos of the haloflow2 simulations.
+
+    
+    args: 
+        dataset (str): specify training or test data. specify 'train' or 'test'
+
+        obs (str): specify the observables to include 
+
+    '''
+    fdata = os.path.join(dat_dir, 'hf2', 'hf2.%s.morph_subhalo.csv' % sim)
+    subhalo = Table.read(fdata) 
+    
+    props = [] 
+    if 'mags' in obs: props.append('Sersic_mag') 
+    if 'morph' in obs: props += ['Sersic_re', 'Sersic_nser', 'Sersic_axrat']
+    if 'morph_extra' in obs: props += ['AsymmetryNoAperture', 'ResidualAsymmetryNoAperture', 'Concentration_Elliptical', 'Smoothness', 'Gini', 'M20', 'SB1kpc']
+
+    cols = []
+    for b in ['g', 'r', 'i', 'y', 'z']: 
+        for p in props: 
+            cols.append('%s_%s' % (p, b))
+
+    if 'satlum' in obs: 
+        raise NotImplementedError 
+    if 'rich' in obs: 
+        raise NotImplementedError
+
+    Y = np.array([np.array(subhalo[col].data) for col in ['log_subhalomass_stars', 'log_subhalomass_dm']]).T # stellar and halo mass 
+    X = np.array([np.array(subhalo[col].data) for col in cols]).T
+    
+    np.random.seed(42) # random seed to the splits are fixed. 
+    isort = np.arange(X.shape[0])  
+    np.random.shuffle(isort)
+
+    Ntrain = int(0.9 * X.shape[0])
+    if dataset == 'train': 
+        return Y[isort][:Ntrain], X[isort][:Ntrain]
+    elif dataset == 'test': 
+        return Y[isort][Ntrain:], X[isort][Ntrain:]
+    elif dataset == 'all': 
+        return Y[isort], X[isort]
+
+
 def get_subhalos(dataset, obs, snapshot=91, version=1): 
     ''' see nb/compile_subhalos.ipynb and nb/datasets.ipynb
     '''
@@ -76,7 +120,7 @@ def get_subhalos(dataset, obs, snapshot=91, version=1):
             elif 'satlum_1e9' in obs: 
                 cols.append('%s_satlum_1e9_boxcox' % b)
             elif 'satlum_mr' in obs: 
-                cols.append('%s_satlum_mr9_boxcox' % b)
+                cols.append('%s_satlum_mr_boxcox' % b)
 
     if 'rich' in obs: 
         if 'rich_all' in obs: 
