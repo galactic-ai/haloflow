@@ -45,6 +45,11 @@ def hf2_centrals(dataset, obs, sim='TNG100', version=1):
 
     Y = np.array([np.array(subhalo[col].data) for col in ['log_subhalomass_stars', 'log_subhalomass_dm']]).T # stellar and halo mass 
     X = np.array([np.array(subhalo[col].data) for col in cols]).T
+
+    # remove NaNs caused by mass = 0 subhalos
+    not_nan = np.all(np.isfinite(Y), axis=1) & np.all(np.isfinite(X), axis=1) 
+    Y = Y[not_nan]
+    X = X[not_nan]
     
     np.random.seed(42) # random seed to the splits are fixed. 
     isort = np.arange(X.shape[0])  
