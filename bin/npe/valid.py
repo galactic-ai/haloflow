@@ -1,7 +1,7 @@
 #!/bin/python 
 ''' script to run validation tests on NPE  
 '''
-import os
+import os, sys
 import numpy as np
 
 import torch
@@ -53,7 +53,7 @@ n_sample = 10000
 
 ranks = []
 y_nde = [] 
-for i in trange(X_test.shape[0]): 
+for i in range(X_test.shape[0]): 
     y_samp = []
     for qphi in qphis: 
         _samp = qphi.sample((int(n_sample/len(qphis)),),
@@ -114,5 +114,5 @@ ax.set_ylabel("Expected Coverage", fontsize=20)
 ax.set_ylim(0., 1.)
 ax.set_xlabel("Credibility Level", fontsize=20)
 ax.set_xlim(0., 1.)
-fig.savefig('/scratch/gpfs/chhahn/haloflow/hf2/npe/h2.v1.%s.%s.tarp.pdf' % (sim, obs), 
+fig.savefig('/scratch/gpfs/chhahn/haloflow/hf2/npe/h2.v1.%s.%s.tarp.png' % (sim, obs), 
         bbox_inches='tight')
