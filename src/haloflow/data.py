@@ -43,7 +43,7 @@ def hf2_centrals(dataset, obs, sim='TNG100', version=1):
     if 'rich' in obs: 
         raise NotImplementedError
 
-    Y = np.array([np.array(subhalo[col].data) for col in ['log_subhalomass_stars', 'log_subhalomass_dm']]).T # stellar and halo mass 
+    Y = np.array([np.array(subhalo[col].data) for col in ['SubhaloMassType_stars', 'SubhaloMassType_dm']]).T # stellar and halo mass 
     X = np.array([np.array(subhalo[col].data) for col in cols]).T
 
     # remove NaNs caused by mass = 0 subhalos

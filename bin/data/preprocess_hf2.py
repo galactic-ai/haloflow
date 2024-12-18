@@ -9,24 +9,35 @@ from tqdm import trange
 
 sim = sys.argv[1]
 
-if sim not in ['TNG100', 'TNG50', 'Eagle100', 'Simba100']: 
+if sim not in ['TNG100', 'TNG50', 'Eagle100', 'Simba100', 'TNG50_corr']: 
     raise ValueError('Sim is not included in HF2') 
 
+# for TNG50 you can apply stellar mass and magnitude correction 
+corr = False
+if 'corr' in sim: 
+    sim = 'TNG50'
+    corr = True
 
 dat_dir = '/scratch/gpfs/chhahn/haloflow/hf2/'
 
-# read subhalos 
-subhalo = Table.read(os.path.join(dat_dir, 'HaloFlow_%s-1_Subhalos.csv' % sim))
-# only keep centrals 
-subhal = subhalo[subhalo['GroupFirstSub'] == 1] 
-print('%i subhalos' % len(subhalo))
-
 # read photometry and morphology 
 morph = Table.read(os.path.join(dat_dir, 'HaloFlow_%s-1.csv' % sim))
-morph = morph[morph['ProcessFlag'] == 0]  # if flag is 0, the Sersic fit worked and non-parametric morphologies were calculated
+# only keep centrals
+morph = morph[morph['GroupFirstSub'] == 1] 
+# if flag is 0, the Sersic fit worked and non-parametric morphologies were calculated
+morph = morph[morph['ProcessFlag'] == 0]  
+print('%i subhalos' % len(morph))
+
+# apply stellar mass, magnitude, surface brightness corrections
+if corr: 
+    morph['SubhaloMassType_stars']  = morph['SubhaloMassType_stars'] + morph['StellarMassCorrection'] 
+    morph['Sersic_mag']             = morph['Sersic_mag'] + morph['MagnitudeCorrection']
+    morph['SB1kpc']                 = morph['SB1kpc'] + morph['MagnitudeCorrection']
 
 select_cols = ['SnapNum', 'SubfindID', 'Camera', 'Band',
     'Redshift',
+    'SubhaloMassType_stars', # log10(stellar mass) 
+    'SubhaloMassType_dm', # log10(halo mass) 
     'Sersic_mag',    # magnitude
     'Sersic_re',     # R_eff
     'Sersic_nser',   # sersic index
@@ -54,9 +65,8 @@ morph_y = morph[morph['Band'] == 'y']
 morph_z = morph[morph['Band'] == 'z']
 
 for band, _morph in zip(['g', 'r', 'i', 'y', 'z'], [morph_g, morph_r, morph_i, morph_y, morph_z]):
-
     for col in _morph.colnames:
-        if col not in ['SnapNum', 'SubfindID', 'Camera', 'Band', 'Redshift']:
+        if col not in ['SnapNum', 'SubfindID', 'Camera', 'Band', 'Redshift', 'SubhaloMassType_stars', 'SubhaloMassType_dm']:
             _morph.rename_column(col, col+'_'+band)
     _morph.remove_column('Band')
 
@@ -71,28 +81,14 @@ for i, _morph in enumerate([morph_g, morph_i, morph_r, morph_y, morph_z]):
     if i == 0: 
         morphs = _morph.copy()
     else:        
-        morphs = aJoin(morphs, _morph[~mask], keys=['SnapNum', 'SubfindID', 'Camera', 'Redshift'], join_type='left')
+        morphs = aJoin(morphs, _morph[~mask], keys=['SnapNum', 'SubfindID', 'Camera', 'Redshift', 'SubhaloMassType_stars', 'SubhaloMassType_dm'], join_type='left')
 
-
-for col in ['SubhaloMassType_stars', 'SubhaloMassType_dm']:
-    morphs[col] = np.repeat(-999., len(morphs))
-    
-for i in trange(len(morphs)): 
-    is_sh = (subhalo['SnapNum'] == morphs['SnapNum'][i]) & (subhalo['SubfindID'] ==  morphs['SubfindID'][i])
-
-    if np.sum(is_sh) == 1: 
-        morphs['SubhaloMassType_stars'][i] = subhalo['SubhaloMassType_stars'][is_sh]
-        morphs['SubhaloMassType_dm'][i] = subhalo['SubhaloMassType_dm'][is_sh]        
-
-
+# remove any masked data 
 mask = np.zeros(len(morphs)).astype(bool)
 for col in morphs.colnames:
     flag = (morphs[col] == -99)
     mask = mask | flag
 morphs = morphs[~mask]
 
-morphs['log_subhalomass_stars'] = np.log10(morphs['SubhaloMassType_stars'])+10.
-morphs['log_subhalomass_dm'] = np.log10(morphs['SubhaloMassType_dm'])+10.
-
 # write to file 
-morphs.write(os.path.join(dat_dir, 'hf2.%s.morph_subhalo.csv' % sim), overwrite=True)
+morphs.write(os.path.join(dat_dir, 'hf2.%s%s.morph_subhalo.csv' % (sim, ['', '_corr'][corr])), overwrite=True)
