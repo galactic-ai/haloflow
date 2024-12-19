@@ -36,8 +36,8 @@ if corr:
 
 select_cols = ['SnapNum', 'SubfindID', 'Camera', 'Band',
     'Redshift',
-    'SubhaloMassType_stars', # log10(stellar mass) 
-    'SubhaloMassType_dm', # log10(halo mass) 
+    'SubhaloMassType_stars',    # log10(stellar mass) 
+    'Group_M_Crit200',          # log10(halo mass) 
     'Sersic_mag',    # magnitude
     'Sersic_re',     # R_eff
     'Sersic_nser',   # sersic index
@@ -66,7 +66,7 @@ morph_z = morph[morph['Band'] == 'z']
 
 for band, _morph in zip(['g', 'r', 'i', 'y', 'z'], [morph_g, morph_r, morph_i, morph_y, morph_z]):
     for col in _morph.colnames:
-        if col not in ['SnapNum', 'SubfindID', 'Camera', 'Band', 'Redshift', 'SubhaloMassType_stars', 'SubhaloMassType_dm']:
+        if col not in ['SnapNum', 'SubfindID', 'Camera', 'Band', 'Redshift', 'SubhaloMassType_stars', 'Group_M_Crit200']:
             _morph.rename_column(col, col+'_'+band)
     _morph.remove_column('Band')
 
@@ -81,7 +81,7 @@ for i, _morph in enumerate([morph_g, morph_i, morph_r, morph_y, morph_z]):
     if i == 0: 
         morphs = _morph.copy()
     else:        
-        morphs = aJoin(morphs, _morph[~mask], keys=['SnapNum', 'SubfindID', 'Camera', 'Redshift', 'SubhaloMassType_stars', 'SubhaloMassType_dm'], join_type='left')
+        morphs = aJoin(morphs, _morph[~mask], keys=['SnapNum', 'SubfindID', 'Camera', 'Redshift', 'SubhaloMassType_stars', 'Group_M_Crit200'], join_type='left')
 
 # remove any masked data 
 mask = np.zeros(len(morphs)).astype(bool)
