@@ -20,7 +20,7 @@ device = ("cuda:0" if cuda else "cpu")
 obs = sys.argv[1]
 sim = sys.argv[2]
 
-if sim not in ['TNG50', 'TNG100', 'Eagle100', 'Simba100']: raise ValueError
+if sim not in ['TNG50', 'TNG100', 'TNG_ALL', 'Eagle100', 'Simba100']: raise ValueError
 
 ##################################################################################
 # read in training data 
