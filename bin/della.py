@@ -85,10 +85,10 @@ def train_NDE_optuna(obs, nf_model='maf', hr=12, gpu=True, mig=True):
 #for nsnap  in [91, 59, 63, 67, 72, 78, 84]: 
 #    make_data(nsnap)
 
-for i in range(5):
+for i in range(10):
     train_NDE_optuna('mags', nf_model='maf', hr=4, gpu=False, mig=False) 
     train_NDE_optuna('mags_morph', nf_model='maf', hr=4, gpu=False, mig=False) 
-    train_NDE_optuna('mags_morph_satlum_all', nf_model='maf', hr=4, gpu=False, mig=False) 
-    train_NDE_optuna('mags_morph_satlum_all_rich_all', nf_model='maf', hr=4, gpu=False, mig=False) 
+    #train_NDE_optuna('mags_morph_satlum_all', nf_model='maf', hr=4, gpu=False, mig=False) 
+    #train_NDE_optuna('mags_morph_satlum_all_rich_all', nf_model='maf', hr=4, gpu=False, mig=False) 
     train_NDE_optuna('mags_morph_satlum_mrlim', nf_model='maf', hr=4, gpu=False, mig=False) 
     train_NDE_optuna('mags_morph_satlum_mrliml_rich_mrlim', nf_model='maf', hr=4, gpu=False, mig=False) 
