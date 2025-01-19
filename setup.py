@@ -25,7 +25,8 @@ INSTALL_REQUIRES = [
         "matplotlib", 
         "corner",
         "tqdm", 
-        "torch"
+        "torch", 
+        "astropy"
 ]
 # END PROJECT SPECIFIC
 
