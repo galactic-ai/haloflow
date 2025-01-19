@@ -11,6 +11,8 @@ from astropy.table import Table
 
 if os.environ['machine'] == 'della': 
     dat_dir = '/scratch/gpfs/chhahn/haloflow/'
+elif os.environ['machine'] == 'puma': 
+    dat_dir = '/xdisk/chhahn/chhahn/haloflow/'
 else: 
     raise ValueError
 
