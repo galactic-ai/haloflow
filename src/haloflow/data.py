@@ -69,7 +69,7 @@ def hf2_centrals(dataset, obs, sim='TNG100', version=1):
 def get_subhalos(dataset, obs, snapshot=91, version=1): 
     ''' see nb/compile_subhalos.ipynb and nb/datasets.ipynb
     '''
-    if snapshot != 91: raise NotImpelmentedError  
+    if snapshot != 91: raise NotImplementedError  
     fdata  = os.path.join(dat_dir, 'subhalos.central.snapshot%i.v%i.%s.hdf5' % (snapshot, version, dataset))
     
     if os.path.isfile(fdata): 
