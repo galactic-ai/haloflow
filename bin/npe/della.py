@@ -7,7 +7,7 @@ python script to deploy jobs on della-gpu
 import os, sys 
 
 
-def train_npe_optuna(sim, obs, hr=12, gpu=True, mig=True): 
+def train_npe_optuna(sim, obs, hr=12, gpu=True, mig=True, email="chhahn@princeton.edu"): 
     ''' train Neural Posterior Estimator for haloflow2 
     '''
     jname = "npe.%s.%s" % (sim, obs)
@@ -23,7 +23,7 @@ def train_npe_optuna(sim, obs, hr=12, gpu=True, mig=True):
         ['', '#SBATCH --partition=mig'][mig], 
         "#SBATCH --output=%s" % ofile, 
         "#SBATCH --mail-type=all",
-        "#SBATCH --mail-user=chhahn@princeton.edu",
+        "#SBATCH --mail-user=%s" % email,
         "", 
         'now=$(date +"%T")', 
         'echo "start time ... $now"', 

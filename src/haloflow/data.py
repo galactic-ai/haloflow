@@ -8,7 +8,7 @@ import os
 import numpy as np 
 from astropy.table import Table 
 
-
+# make sure to setup env variables before using haloflow package...
 if os.environ['machine'] == 'della': 
     dat_dir = '/scratch/gpfs/chhahn/haloflow/'
 elif os.environ['machine'] == 'puma': 

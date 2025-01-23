@@ -38,7 +38,7 @@ prior = Ut.BoxUniform(low=lower_bounds, high=upper_bounds, device=device)
 n_trials    = 1000
 study_name  = 'msmh.v1.%s.%s' % (obs, nf_model)
 
-output_dir = '/scratch/gpfs/chhahn/haloflow/nde'
+output_dir = '/xdisk/chhahn/chhahn/haloflow/nde'
 
 n_jobs     = 1
 if not os.path.isdir(os.path.join(output_dir, study_name)): 
