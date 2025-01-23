@@ -10,7 +10,8 @@ def train_npe_optuna(sim, obs, hr=12, gpu=True, mig=True, email="chhahn@princeto
         "#!/bin/bash", 
         "#SBATCH -J %s" % jname,
         "#SBATCH --account=chhahn",
-        "#SBATCH --partition=gpu_standard",
+        ["#SBATCH --partition=gpu_standard"][gpu],
+        ["#SBATCH --partition=standard"][not gpu],
         "#SBATCH --nodes=1", 
         "#SBATCH --ntasks=16",
         "#SBATCH --time=%s:59:59" % str(hr-1).zfill(2),
@@ -44,7 +45,7 @@ def train_npe_optuna(sim, obs, hr=12, gpu=True, mig=True, email="chhahn@princeto
     return None
 
 
-def validate_npe(sim, obs, hr=1): 
+def validate_npe(sim, obs, hr=1, email="chhahn@princeton.edu"): 
     ''' validate Neural Posterior Estimator ensemble for haloflow2    '''
     jname = "valid.npe.%s.%s" % (sim, obs)
     ofile = "o/_valid.NDE.%s.%s" % (sim, obs)
@@ -57,15 +58,17 @@ def validate_npe(sim, obs, hr=1):
         "#SBATCH --export=ALL", 
         "#SBATCH --output=%s" % ofile, 
         "#SBATCH --mail-type=all",
-        "#SBATCH --mail-user=chhahn@princeton.edu",
+        "#SBATCH --mail-user=%s" % email,
         "", 
         'now=$(date +"%T")', 
         'echo "start time ... $now"', 
         "", 
         "source ~/.bashrc", 
-        "conda activate sbi", 
+        # "conda activate sbi", 
+        "cd haloflow",
+        "source venv/bin/activate",
         "",
-        "python /home/chhahn/projects/haloflow/bin/npe/valid.py %s %s" % (obs, sim), 
+        "python /groups/chhahn/haloflow/bin/npe/valid.py %s %s" % (obs, sim), 
         "",
         'now=$(date +"%T")', 
         'echo "end time ... $now"', 

@@ -38,7 +38,8 @@ sim = sys.argv[2]
 ##################################################################################
 qphis = U.read_best_ndes('h2.v1.%s.%s' % (sim, obs), 
         n_ensemble=5, device=device, 
-        dat_dir='/scratch/gpfs/chhahn/haloflow/hf2/npe', # hardcoded to run on della ATM
+        # dat_dir='/xdisk/chhahn/chhahn/haloflow/hf2/npe', # hardcoded to run on della ATM
+        dat_dir='/xdisk/chhahn/chhahn/haloflow/hf2/npe',
         verbose=True)
 
 ##################################################################################
@@ -100,7 +101,7 @@ sub.set_xlabel('rank statistics', fontsize=20)
 sub.set_xlim(0., 1.)
 sub.set_ylim(0., 3.)
 sub.set_yticks([])
-fig.savefig('/scratch/gpfs/chhahn/haloflow/hf2/npe/h2.v1.%s.%s.rank.png' % (sim, obs), 
+fig.savefig('/xdisk/chhahn/chhahn/haloflow/hf2/npe/h2.v1.%s.%s.rank.png' % (sim, obs), 
         bbox_inches='tight')
 
 ##################################################################################
@@ -114,5 +115,5 @@ ax.set_ylabel("Expected Coverage", fontsize=20)
 ax.set_ylim(0., 1.)
 ax.set_xlabel("Credibility Level", fontsize=20)
 ax.set_xlim(0., 1.)
-fig.savefig('/scratch/gpfs/chhahn/haloflow/hf2/npe/h2.v1.%s.%s.tarp.png' % (sim, obs), 
+fig.savefig('/xdisk/chhahn/chhahn/haloflow/hf2/npe/h2.v1.%s.%s.tarp.png' % (sim, obs), 
         bbox_inches='tight')
