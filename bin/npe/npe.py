@@ -10,8 +10,9 @@ from torch import nn
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import optuna 
-from sbi import neural_net as nn
+#from sbi import neural_nets as nn
 from sbi import inference as Inference
+from sbi import utils as Ut
 
 ##################################################################################
 cuda = torch.cuda.is_available()
@@ -63,7 +64,7 @@ def Objective(trial):
     n_transf = trial.suggest_int("n_transf", n_transf_min,  n_transf_max)
     n_hidden = trial.suggest_int("n_hidden", n_hidden_min, n_hidden_max, log=True)
     lr = trial.suggest_float("lr", n_lr_min, n_lr_max, log=True) 
-    neural_posterior = nn.posterior_nn('maf', 
+    neural_posterior = Ut.posterior_nn('maf', 
             hidden_features=n_hidden, 
             num_transforms=n_transf, 
             num_blocks=n_blocks, 
