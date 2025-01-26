@@ -8,13 +8,9 @@ import os
 import numpy as np 
 from astropy.table import Table 
 
-# make sure to setup env variables before using haloflow package...
-if os.environ['machine'] == 'della': 
-    dat_dir = '/scratch/gpfs/chhahn/haloflow/'
-elif os.environ['machine'] == 'puma': 
-    dat_dir = '/xdisk/chhahn/chhahn/haloflow/'
-else: 
-    raise ValueError
+from . import config as C
+
+dat_dir = C.get_dat_dir()
 
 
 def hf2_centrals(dataset, obs, sim='TNG100', version=1): 
