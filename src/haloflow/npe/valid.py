@@ -30,8 +30,9 @@ def validate_npe(train_obs, train_sim,
 
     ranks = []
     y_nde = []
-    
+
     # move X_test to device once
+    Y_test_torch = torch.tensor(Y_test, dtype=torch.float32).to(device)
     X_test_torch = torch.tensor(X_test, dtype=torch.float32).to(device)
 
     for i in range(X_test_torch.shape[0]):
@@ -47,7 +48,7 @@ def validate_npe(train_obs, train_sim,
         y_cat = torch.cat(y_samp, dim=0)
 
         # compute ranks in a vectorized way
-        ranks.append((y_cat < Y_test[i]).float().mean(dim=0).cpu().numpy())
+        ranks.append((y_cat < Y_test_torch[i]).float().mean(dim=0).cpu().numpy())
 
         # store samples in CPU
         y_nde.append(y_cat.cpu().numpy())
