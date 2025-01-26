@@ -68,7 +68,8 @@ def validate_npe(sim, obs, hr=1, email="chhahn@princeton.edu"):
         "cd haloflow",
         "source venv/bin/activate",
         "",
-        "python /groups/chhahn/haloflow/bin/npe/valid.py %s %s" % (obs, sim), 
+        # "python /groups/chhahn/haloflow/bin/npe/valid.py %s %s" % (obs, sim), 
+        "python /groups/chhahn/haloflow/bin/npe/valid_diff_sims.py"
         "",
         'now=$(date +"%T")', 
         'echo "end time ... $now"', 
@@ -83,9 +84,10 @@ def validate_npe(sim, obs, hr=1, email="chhahn@princeton.edu"):
     return None
 
 if __name__=="__main__": 
-    for sim in ['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']: 
-       train_npe_optuna(sim, 'mags', hr=16, gpu=True, mig=False, email='nikhilgaruda@arizona.edu') 
-       train_npe_optuna(sim, 'mags_morph', hr=16, gpu=True, mig=False, email='nikhilgaruda@arizona.edu') 
+    # for sim in ['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']: 
+    #    train_npe_optuna(sim, 'mags', hr=16, gpu=True, mig=False, email='nikhilgaruda@arizona.edu') 
+    #    train_npe_optuna(sim, 'mags_morph', hr=16, gpu=True, mig=False, email='nikhilgaruda@arizona.edu') 
+    validate_npe('cross_valid', 'mags', hr=1)
 
 #     for sim in ['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']: 
 #         validate_npe(sim, 'mags', hr=1)
