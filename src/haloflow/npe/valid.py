@@ -30,22 +30,27 @@ def validate_npe(train_obs, train_sim,
 
     ranks = []
     y_nde = []
-    for i in range(X_test.shape[0]):
+    
+    # move X_test to device once
+    X_test_torch = torch.tensor(X_test, dtype=torch.float32).to(device)
+
+    for i in range(X_test_torch.shape[0]):
+        # sample in GPU and concatenate
         y_samp = []
-        x_tensor = torch.tensor(X_test[i], dtype=torch.float32).to(device)
         for qphi in qphis:
             _samp = qphi.sample(
-                (int(n_samples/len(qphis)),),
-                x=x_tensor,
+                (int(n_samples / len(qphis)),),
+                x=X_test_torch[i],
                 show_progress_bars=False
             )
-            y_samp.append(_samp.detach().cpu().numpy())
-        y_nde.append(np.concatenate(y_samp, axis=0))
+            y_samp.append(_samp)
+        y_cat = torch.cat(y_samp, dim=0)
 
-        _ranks = []
-        for i_dim in range(y_nde[-1].shape[1]):
-            _ranks.append(np.mean(y_nde[-1][:,i_dim].flatten() < Y_test[i, i_dim]))
-        ranks.append(_ranks)
+        # compute ranks in a vectorized way
+        ranks.append((y_cat < Y_test[i]).float().mean(dim=0).cpu().numpy())
+
+        # store samples in CPU
+        y_nde.append(y_cat.cpu().numpy())
 
     ranks = np.array(ranks)
     y_nde = np.array(y_nde)
