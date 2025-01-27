@@ -32,7 +32,7 @@ def plot_rank_statistics(ranks_list, labels):
     plt.tight_layout()
     return fig
 
-def plot_coverage(alpha_list, ecp_list, labels):
+def plot_coverage(alpha_list, ecp_list, labels, ax=None):
     """
     Example:
     alpha_list = [alpha_nde, alpha_nde_2]
@@ -41,7 +41,11 @@ def plot_coverage(alpha_list, ecp_list, labels):
     plot_coverage(alpha_list, ecp_list, labels)
     """
     
-    fig, ax = plt.subplots(1, 1, figsize=(6, 6), dpi=150)
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(6, 6), dpi=150)
+    else:
+        fig = ax.get_figure()
+        
     ax.plot([0, 1], [0, 1], ls="--", color="k")
     
     for alpha, ecp, label in zip(alpha_list, ecp_list, labels):
