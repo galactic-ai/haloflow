@@ -26,6 +26,7 @@ def validate_npe(train_obs, train_sim,
         dat_dir=data_dir,
         verbose=True)
     
+    # read test data
     Y_test, X_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
 
     ranks = []
@@ -56,6 +57,7 @@ def validate_npe(train_obs, train_sim,
     ranks = np.array(ranks)
     y_nde = np.array(y_nde)
 
+    # calculate TARP coverages
     ecp, alpha = get_tarp_coverage(
         np.swapaxes(y_nde, 0, 1),
         Y_test,
