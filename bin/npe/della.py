@@ -45,7 +45,7 @@ def train_npe_optuna(sim, obs, hr=12, gpu=True, mig=True, email="chhahn@princeto
     return None
 
 
-def validate_npe(sim, obs, hr=1, email="chhahn@princeton.edu"): 
+def validate_npe(sim, obs, hr=1, gpu=True, email="chhahn@princeton.edu"): 
     ''' validate Neural Posterior Estimator ensemble for haloflow2    '''
     jname = "valid.npe.%s.%s" % (sim, obs)
     ofile = "o/_valid.NDE.%s.%s" % (sim, obs)
@@ -53,7 +53,10 @@ def validate_npe(sim, obs, hr=1, email="chhahn@princeton.edu"):
     script = '\n'.join([
         "#!/bin/bash", 
         "#SBATCH -J %s" % jname,
+        "#SBATCH --account=chhahn",
+        ["#SBATCH --partition=standard", "#SBATCH --partition=gpu_standard"][gpu],
         "#SBATCH --nodes=1", 
+        "#SBATCH --ntasks=6",
         "#SBATCH --time=%s:59:59" % str(hr-1).zfill(2),
         "#SBATCH --export=ALL", 
         "#SBATCH --output=%s" % ofile, 
@@ -68,7 +71,8 @@ def validate_npe(sim, obs, hr=1, email="chhahn@princeton.edu"):
         "cd haloflow",
         "source venv/bin/activate",
         "",
-        "python /groups/chhahn/haloflow/bin/npe/valid.py %s %s" % (obs, sim), 
+        # "python /groups/chhahn/haloflow/bin/npe/valid.py %s %s" % (obs, sim), 
+        "python /groups/chhahn/haloflow/bin/npe/valid_diff_sims.py"
         "",
         'now=$(date +"%T")', 
         'echo "end time ... $now"', 
@@ -83,9 +87,10 @@ def validate_npe(sim, obs, hr=1, email="chhahn@princeton.edu"):
     return None
 
 if __name__=="__main__": 
-    for sim in ['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']: 
-       train_npe_optuna(sim, 'mags', hr=16, gpu=True, mig=False, email='nikhilgaruda@arizona.edu') 
-       train_npe_optuna(sim, 'mags_morph', hr=16, gpu=True, mig=False, email='nikhilgaruda@arizona.edu') 
+    # for sim in ['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']: 
+    #    train_npe_optuna(sim, 'mags', hr=16, gpu=True, mig=False, email='nikhilgaruda@arizona.edu') 
+    #    train_npe_optuna(sim, 'mags_morph', hr=16, gpu=True, mig=False, email='nikhilgaruda@arizona.edu') 
+    validate_npe('cross_valid', 'mags', hr=1, gpu=True, email="nikhilgaruda@arizona.edu")
 
 #     for sim in ['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']: 
 #         validate_npe(sim, 'mags', hr=1)
