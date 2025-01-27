@@ -12,7 +12,7 @@ def train_npe_optuna(sim, obs, hr=12, gpu=True, mig=True, email="chhahn@princeto
         "#SBATCH --account=chhahn",
         ["#SBATCH --partition=standard", "#SBATCH --partition=gpu_standard"][gpu],
         "#SBATCH --nodes=1", 
-        "#SBATCH --ntasks=20",
+        "#SBATCH --ntasks=2",
 	"#SBATCH --mem-per-cpu=6GB"
         "#SBATCH --time=%s:59:59" % str(hr-1).zfill(2),
         "#SBATCH --export=ALL", 
