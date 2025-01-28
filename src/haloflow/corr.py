@@ -54,3 +54,21 @@ def w_prior_corr(Y_sam, sim, bins=10, version=1):
     w_hmf *= float(len(w_hmf)) / np.sum(w_hmf) # renormalize (this is for convenience and should not affect anything) 
 
     return w_smf, w_hmf
+
+def weighted_resample(data, weights):
+    """
+    Returns an approximate resampled array based on float weights.
+    data: 1D array of values
+    weights: corresponding 1D array of float weights
+    """
+    # Normalize weights so they sum to 1
+    normalized_weights = weights / np.sum(weights)
+    
+    # Number of points to sample can be decided, e.g. same length as original
+    n_samples = len(data)
+    
+    # Choose indices by probability
+    indices = np.random.choice(np.arange(len(data)), size=n_samples, p=normalized_weights)
+    
+    # Return the chosen elements
+    return data[indices]
