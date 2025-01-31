@@ -64,6 +64,7 @@ def plot_coverage(alpha_list, ecp_list, labels, ax=None):
 
 def plot_true_pred(ax, train_obs, train_sim, 
                    test_obs, test_sim, device,
+                   fmt='.C0',
                    mass='halo'):
     """
     Plotting script for true vs predicted values.
@@ -108,7 +109,7 @@ def plot_true_pred(ax, train_obs, train_sim,
 
     ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
     ax.errorbar(y_true[:,0], y_nde_q1[:,0], 
-                yerr=[y_nde_q1[:,0] - y_nde_q0[:,0], y_nde_q2[:,0] - y_nde_q1[:,0]], fmt='.C%i' % 0)
+                yerr=[y_nde_q1[:,0] - y_nde_q0[:,0], y_nde_q2[:,0] - y_nde_q1[:,0]], fmt=fmt)
 
     ax.set_xlabel(r"$\log M_*$ (true)", fontsize=25)
     ax.set_ylabel(r"$\log M_*$ (predicted)", fontsize=25)
