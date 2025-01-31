@@ -118,7 +118,7 @@ def plot_true_pred(ax, train_obs, train_sim,
         # Loop over each sample (i) in the second axis (n_samples)
         for i in range(y_nde.shape[0]):
             # Extract the i-th slice of y_nde (M* and Mh values for this sample)
-            y_sample = y_nde[:, i, :]
+            y_sample = y_nde[i, :, :]
             
             # Compute the weights for the M* and Mh prior for this sample
             w_smf, w_hmf = Corr.w_prior_corr(Y_sam=y_sample, sim=train_sim, bins=10, version=1)
@@ -141,7 +141,7 @@ def plot_true_pred(ax, train_obs, train_sim,
         y_nde = np.stack([y_nde_resampled_Ms, y_nde_resampled_Mh], axis=-1)  # Shape: (100, 1000, 2)
 
     y_nde_q0, y_nde_q1, y_nde_q2 = np.quantile(y_nde, (0.16, 0.5, 0.84), axis=1)
-    ax.plot([9.5, 12.], [9.5, 12.], c='k', ls='--')
+    ax.plot([9.5, 14.], [9.5, 14.], c='k', ls='--')
 
     # ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
     if mass == 'stellar':
@@ -168,4 +168,4 @@ def plot_true_pred(ax, train_obs, train_sim,
     else:
         raise ValueError(f"mass should be either 'halo' or 'stellar', but got {mass}")
 
-    return ax
+    return ax, y_true, y_nde
