@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 from .. import config as C
+from . import valid as V
+from .. import data as D
 
 C.setup_plotting_config()
 
@@ -58,3 +61,58 @@ def plot_coverage(alpha_list, ecp_list, labels, ax=None):
     ax.set_xlim(0., 1.)
     
     return fig, ax
+
+def plot_true_pred(ax, train_obs, train_sim, 
+                   test_obs, test_sim, device,
+                   mass='halo'):
+    """
+    Plotting script for true vs predicted values.
+
+    Parameters
+    ----------
+    ax : matplotlib axis
+        Axis to plot on
+    train_obs : str
+        Observational data to train on. 
+        For now, it's either 'mags' or 'mags_morph'
+    train_sim : str
+        Simulation data to train on. 
+        For now, it's either 'TNG100', 'Eagle100', 'TNG50', 'TNG_ALL', 'Simba100'
+    test_obs : str
+        Observational data to test on. 
+        For now, it's either 'mags' or 'mags_morph'
+    test_sim : str
+        Simulation data to test on. 
+        For now, it's either 'TNG100', 'Eagle100', 'TNG50', 'TNG_ALL', 'Simba100'
+    device : str
+        Device to run on. 
+        For now, it's either 'cpu' or 'cuda'
+    mass : str
+        Mass to predict. 
+        For now, it's either 'halo' or 'stellar'
+    
+    Returns
+    -------
+    ax : matplotlib axis
+    """
+    Y_test, X_test = D.hf2_centrals('test', test_obs, test_sim)
+
+    # randomly choose 100 galaxies
+    idx = np.random.choice(len(Y_test), 100, replace=False)
+    y_true = Y_test[idx]
+
+    _, _, _, y_nde = V.validate_npe(train_obs, train_sim, test_obs, test_sim, device=device, train_samples=100, n_samples=1000)
+
+    y_nde_q0, y_nde_q1, y_nde_q2 = np.quantile(y_nde, (0.16, 0.5, 0.84), axis=1)
+    ax.plot([9.5, 12.], [9.5, 12.], c='k', ls='--')
+
+    ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
+    ax.errorbar(y_true[:,0], y_nde_q1[:,0], 
+                yerr=[y_nde_q1[:,0] - y_nde_q0[:,0], y_nde_q2[:,0] - y_nde_q1[:,0]], fmt='.C%i' % 0)
+
+    ax.set_xlabel(r"$\log M_*$ (true)", fontsize=25)
+    ax.set_ylabel(r"$\log M_*$ (predicted)", fontsize=25)
+    ax.set_xlim(9.5, 12.)
+    ax.set_ylim(9.5, 12.)
+
+    return ax
