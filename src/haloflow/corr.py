@@ -68,6 +68,7 @@ def weighted_resample(data, weights):
     n_samples = len(data)
     
     # Choose indices by probability
+    np.random.seed(42)
     indices = np.random.choice(np.arange(len(data)), size=n_samples, p=normalized_weights)
     
     # Return the chosen elements

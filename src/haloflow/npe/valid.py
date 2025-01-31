@@ -33,6 +33,7 @@ def validate_npe(train_obs, train_sim,
 
     # choose a subset of the test set
     if train_samples is not None:
+        np.random.seed(42)
         idx = np.random.choice(np.arange(Y_test.shape[0]), train_samples, replace=False)
         # Y_test = Y_test[idx]
         # X_test = X_test[idx]
