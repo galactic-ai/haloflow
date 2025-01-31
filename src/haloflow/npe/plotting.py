@@ -103,6 +103,7 @@ def plot_true_pred(ax, train_obs, train_sim,
     Y_test, _ = D.hf2_centrals('test', test_obs, test_sim)
 
     # randomly choose 100 galaxies
+    np.random.seed(42)
     idx = np.random.choice(len(Y_test), 100, replace=False)
     y_true = Y_test[idx]
 
@@ -110,9 +111,34 @@ def plot_true_pred(ax, train_obs, train_sim,
 
     if use_weights:
         # apply weights to correct for SMF and HMF implicit prior
-        w_smf, w_hmf = Corr.w_prior_corr(y_nde, train_sim, bins=10, version=1)
-        y_nde[:, 0] = Corr.weighted_resample(y_nde[:, 0], w_smf)
-        y_nde[:, 1] = Corr.weighted_resample(y_nde[:, 1], w_hmf)
+        # Initialize lists to store the resampled M* and Mh values
+        y_nde_resampled_Ms = []
+        y_nde_resampled_Mh = []
+
+        # Loop over each sample (i) in the second axis (n_samples)
+        for i in range(y_nde.shape[0]):
+            # Extract the i-th slice of y_nde (M* and Mh values for this sample)
+            y_sample = y_nde[:, i, :]
+            
+            # Compute the weights for the M* and Mh prior for this sample
+            w_smf, w_hmf = Corr.w_prior_corr(Y_sam=y_sample, sim=train_sim, bins=10, version=1)
+            
+            # Resample M* using w_smf
+            resampled_Ms = Corr.weighted_resample(y_sample[:, 0], w_smf)
+            
+            # Resample Mh using w_hmf
+            resampled_Mh = Corr.weighted_resample(y_sample[:, 1], w_hmf)
+            
+            # Append the resampled M* and Mh values to the lists
+            y_nde_resampled_Ms.append(resampled_Ms)
+            y_nde_resampled_Mh.append(resampled_Mh)
+
+        # Convert the lists to numpy arrays and combine them into a final array
+        y_nde_resampled_Ms = np.array(y_nde_resampled_Ms)  # Shape: (100, 1000)
+        y_nde_resampled_Mh = np.array(y_nde_resampled_Mh)  # Shape: (100, 1000)
+
+        # Stack the resampled M* and Mh values to get the final resampled array
+        y_nde = np.stack([y_nde_resampled_Ms, y_nde_resampled_Mh], axis=-1)  # Shape: (100, 1000, 2)
 
     y_nde_q0, y_nde_q1, y_nde_q2 = np.quantile(y_nde, (0.16, 0.5, 0.84), axis=1)
     ax.plot([9.5, 12.], [9.5, 12.], c='k', ls='--')
@@ -125,6 +151,9 @@ def plot_true_pred(ax, train_obs, train_sim,
 
         ax.set_xlabel(r"$\log M_*$ (true)", fontsize=25)
         ax.set_ylabel(r"$\log M_*$ (predicted)", fontsize=25)
+
+        ax.set_xlim(9.5, 12.)
+        ax.set_ylim(9.5, 12.)
     
     elif mass == 'halo':
         ax.errorbar(y_true[:,1], y_nde_q1[:,1], 
@@ -133,10 +162,10 @@ def plot_true_pred(ax, train_obs, train_sim,
 
         ax.set_xlabel(r"$\log M_h$ (true)", fontsize=25)
         ax.set_ylabel(r"$\log M_h$ (predicted)", fontsize=25)
+
+        ax.set_xlim(10., 14.)
+        ax.set_ylim(10., 14.)
     else:
         raise ValueError(f"mass should be either 'halo' or 'stellar', but got {mass}")
-
-    ax.set_xlim(9.5, 12.)
-    ax.set_ylim(9.5, 12.)
 
     return ax
