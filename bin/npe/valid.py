@@ -18,7 +18,7 @@ version = 1
 if sim not in ['TNG50', 'TNG100', 'TNG_ALL', 'Eagle100', 'Simba100']: raise ValueError
 if obs not in ['mags', 'mags_morph']: raise ValueError
 
-ranks, alpha, ecp = V.validate_npe(train_obs=obs, train_sim=sim, 
+ranks, alpha, ecp, y_nde = V.validate_npe(train_obs=obs, train_sim=sim, 
                                    test_obs=obs, test_sim=sim, 
                                    version=version, device=device)
 

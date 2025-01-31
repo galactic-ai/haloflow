@@ -21,7 +21,7 @@ def process_simulations_figures(train_sim):
         if train_sim == test_sim:
             continue
         
-        ranks, alpha, ecp = V.validate_npe(train_obs=obs, train_sim=train_sim, test_obs=obs, test_sim=test_sim, version=1)
+        ranks, alpha, ecp, y_nde = V.validate_npe(train_obs=obs, train_sim=train_sim, test_obs=obs, test_sim=test_sim, version=1)
         
         all_ranks.append(ranks)
         all_alpha.append(alpha)
@@ -36,6 +36,8 @@ def process_simulations_figures(train_sim):
     fig, ax = plotting.plot_coverage(all_alpha, all_ecp, labels=[f'{train_sim}_{test_sim}' for test_sim in sims if train_sim != test_sim])
     fig.savefig('/xdisk/chhahn/chhahn/haloflow/hf2/npe/h2.v1.%s.%s.tarp_crossvalid.png' % (train_sim, obs), 
         bbox_inches='tight')
+    
+    fig.clf()
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
     executor.map(process_simulations_figures, sims)
