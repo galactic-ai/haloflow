@@ -4,6 +4,7 @@ import numpy as np
 from .. import config as C
 from . import valid as V
 from .. import data as D
+from .. import corr as Corr
 
 C.setup_plotting_config()
 
@@ -65,7 +66,8 @@ def plot_coverage(alpha_list, ecp_list, labels, ax=None):
 def plot_true_pred(ax, train_obs, train_sim, 
                    test_obs, test_sim, device,
                    fmt='.C0',
-                   mass='halo'):
+                   mass='halo',
+                   use_weights=False):
     """
     Plotting script for true vs predicted values.
 
@@ -91,12 +93,14 @@ def plot_true_pred(ax, train_obs, train_sim,
     mass : str
         Mass to predict. 
         For now, it's either 'halo' or 'stellar'
+    use_weights : bool
+        Whether to use weights to correct for SMF and HMF implicit prior.
     
     Returns
     -------
     ax : matplotlib axis
     """
-    Y_test, X_test = D.hf2_centrals('test', test_obs, test_sim)
+    Y_test, _ = D.hf2_centrals('test', test_obs, test_sim)
 
     # randomly choose 100 galaxies
     idx = np.random.choice(len(Y_test), 100, replace=False)
@@ -104,15 +108,34 @@ def plot_true_pred(ax, train_obs, train_sim,
 
     _, _, _, y_nde = V.validate_npe(train_obs, train_sim, test_obs, test_sim, device=device, train_samples=100, n_samples=1000)
 
+    if use_weights:
+        # apply weights to correct for SMF and HMF implicit prior
+        w_smf, w_hmf = Corr.w_prior_corr(y_nde, train_sim, bins=10, version=1)
+        y_nde[:, 0] = Corr.weighted_resample(y_nde[:, 0], w_smf)
+        y_nde[:, 1] = Corr.weighted_resample(y_nde[:, 1], w_hmf)
+
     y_nde_q0, y_nde_q1, y_nde_q2 = np.quantile(y_nde, (0.16, 0.5, 0.84), axis=1)
     ax.plot([9.5, 12.], [9.5, 12.], c='k', ls='--')
 
-    ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
-    ax.errorbar(y_true[:,0], y_nde_q1[:,0], 
-                yerr=[y_nde_q1[:,0] - y_nde_q0[:,0], y_nde_q2[:,0] - y_nde_q1[:,0]], fmt=fmt)
+    # ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
+    if mass == 'stellar':
+        ax.errorbar(y_true[:,0], y_nde_q1[:,0], 
+                    yerr=[y_nde_q1[:,0] - y_nde_q0[:,0], y_nde_q2[:,0] - y_nde_q1[:,0]], 
+                    fmt=fmt, label=f'{train_sim.upper()}-{test_sim.upper()}')
 
-    ax.set_xlabel(r"$\log M_*$ (true)", fontsize=25)
-    ax.set_ylabel(r"$\log M_*$ (predicted)", fontsize=25)
+        ax.set_xlabel(r"$\log M_*$ (true)", fontsize=25)
+        ax.set_ylabel(r"$\log M_*$ (predicted)", fontsize=25)
+    
+    elif mass == 'halo':
+        ax.errorbar(y_true[:,1], y_nde_q1[:,1], 
+                    yerr=[y_nde_q1[:,1] - y_nde_q0[:,1], y_nde_q2[:,1] - y_nde_q1[:,1]], 
+                    fmt=fmt, label=f'{train_sim.upper()}-{test_sim.upper()}')
+
+        ax.set_xlabel(r"$\log M_h$ (true)", fontsize=25)
+        ax.set_ylabel(r"$\log M_h$ (predicted)", fontsize=25)
+    else:
+        raise ValueError(f"mass should be either 'halo' or 'stellar', but got {mass}")
+
     ax.set_xlim(9.5, 12.)
     ax.set_ylim(9.5, 12.)
 
