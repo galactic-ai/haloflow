@@ -26,6 +26,7 @@ class SimulationDataset:
             mask_sm = (Y_train[:, 0] > mass_range_sm[0]) & (Y_train[:, 0] < mass_range_sm[1])
             mask_hm = (Y_train[:, 1] > mass_range_hm[0]) & (Y_train[:, 1] < mass_range_hm[1])
             Y_train = Y_train[mask_sm & mask_hm]
+            X_train = X_train[mask_sm & mask_hm]
 
             data[sim] = {
                 "X_train": X_train,
