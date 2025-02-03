@@ -6,30 +6,83 @@ import torch.nn as nn
 from . import utils as U
 
 
+class FeatureExtractor(nn.Module):
+    def __init__(self, input_dim, layers=[128, 64]):
+        super().__init__()
+        self.layers = nn.ModuleList([nn.Linear(input_dim, layers[0])])
+        self.layers.extend(
+            [nn.Linear(layers[i], layers[i + 1]) for i in range(len(layers) - 1)]
+        )
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        for layer in self.layers:
+            x = self.relu(layer(x))
+        return x
+
+
+class LabelPredictor(nn.Module):
+    def __init__(self, label_layers=[64, 32], output_dim=2):
+        super().__init__()
+        self.layers = nn.ModuleList()
+        self.layers.extend(
+            [
+                nn.Linear(label_layers[i], label_layers[i + 1])
+                for i in range(len(label_layers) - 1)
+            ]
+        )
+        self.output = nn.Linear(
+            label_layers[-1], output_dim
+        )  # Output: [stellar_mass, halo_mass]
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        for layer in self.layers:
+            x = self.relu(layer(x))
+        return self.output(x)
+
+
+class DomainClassifier(nn.Module):
+    def __init__(self, domain_layers=[64, 32], num_domains=4, alpha=1.0):
+        super().__init__()
+        self.layers = nn.ModuleList([U.GradientReversalLayer(alpha=alpha)])
+        self.layers.extend(
+            [
+                nn.Linear(domain_layers[i], domain_layers[i + 1])
+                for i in range(len(domain_layers) - 1)
+            ]
+        )
+        self.output = nn.Linear(domain_layers[-1], num_domains)  # Output: domain logits
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        for layer in self.layers:
+            x = self.relu(layer(x))
+        return self.output(x)
+
+
 class DANN(nn.Module):
-    def __init__(self, input_dim, num_domains=4, alpha=1.0):
+    def __init__(
+        self,
+        input_dim,
+        feature_layers=[128, 64],
+        label_layers=[64, 32],
+        output_dim=2,
+        domain_layers=[64, 32],
+        num_domains=4,
+        alpha=1.0,
+    ):
         super().__init__()
         self.alpha = alpha
 
         # Feature Extractor (Shared)
-        self.feature_extractor = nn.Sequential(
-            nn.Linear(input_dim, 128), nn.ReLU(), nn.Linear(128, 64), nn.ReLU()
-        )
+        self.feature_extractor = FeatureExtractor(input_dim, feature_layers)
 
         # Label Predictor (Task-Specific)
-        self.label_predictor = nn.Sequential(
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 2),  # Output: [stellar_mass, halo_mass]
-        )
+        self.label_predictor = LabelPredictor(label_layers, output_dim)
 
         # Domain Classifier (Adversarial)
-        self.domain_classifier = nn.Sequential(
-            U.GradientReversalLayer(alpha=self.alpha),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, num_domains),  # Output: domain logits
-        )
+        self.domain_classifier = DomainClassifier(domain_layers, num_domains, alpha)
 
     def forward(self, x):
         features = self.feature_extractor(x)
@@ -39,4 +92,11 @@ class DANN(nn.Module):
 
     def build_from_config(cls, config):
         """Optional: For hyperparameter flexibility"""
-        return cls(input_dim=config["input_dim"], num_domains=config["num_domains"])
+        return cls(
+            input_dim=config["input_dim"],
+            num_domains=config["num_domains"],
+            feature_layers=config["feature_layers"],
+            label_layers=config["label_layers"],
+            domain_layers=config["domain_layers"],
+            alpha=config["alpha"],
+        )
