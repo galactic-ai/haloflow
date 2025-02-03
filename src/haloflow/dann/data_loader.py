@@ -59,7 +59,7 @@ class SimulationDataset:
             X_train_tensor, Y_train_tensor, domain_labels_tensor
         )
         test_dataset = TensorDataset(
-            X_test_tensor, Y_test_tensor, domain_labels_tensor_test
+            X_test_tensor, Y_test_tensor
         )
 
         # Create DataLoaders
