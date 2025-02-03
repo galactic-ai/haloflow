@@ -1,3 +1,4 @@
+from re import M
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -17,6 +18,15 @@ class SimulationDataset:
         for sim in self.sims:
             Y_train, X_train = D.hf2_centrals("train", self.obs, sim=sim)
             Y_test, X_test = D.hf2_centrals("test", self.obs, sim=sim)
+
+            # impose mass priors (already in log space)
+            # TODO: need to revisit later
+            mass_range_sm = [10.0, 13.]
+            mass_range_hm = [10.7, 15.]
+            mask_sm = (Y_train[:, 0] > mass_range_sm[0]) & (Y_train[:, 0] < mass_range_sm[1])
+            mask_hm = (Y_train[:, 1] > mass_range_hm[0]) & (Y_train[:, 1] < mass_range_hm[1])
+            Y_train = Y_train[mask_sm & mask_hm]
+
             data[sim] = {
                 "X_train": X_train,
                 "Y_train": Y_train,
