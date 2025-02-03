@@ -2,10 +2,11 @@ import numpy as np
 import torch
 from sklearn.metrics import mean_squared_error, r2_score
 
+
 def evaluate_regression(model, dataloader, device="cuda"):
     """
     Evaluate the model's regression performance (MSE, RMSE, R²).
-    
+
     Parameters
     ----------
     model : torch.nn.Module
@@ -14,7 +15,7 @@ def evaluate_regression(model, dataloader, device="cuda"):
         DataLoader for the test set.
     device : str
         Device to run evaluation on.
-    
+
     Returns
     -------
     dict
@@ -36,27 +37,28 @@ def evaluate_regression(model, dataloader, device="cuda"):
     mse = mean_squared_error(y_true, y_pred)
     rmse = np.sqrt(mse)
     r2 = r2_score(y_true, y_pred)
-    
+
     print(f"MSE: {mse:.4f}, RMSE: {rmse:.4f}, R²: {r2:.4f}")
     return {"mse": mse, "rmse": rmse, "r2": r2}
 
+
 def domain_accuracy(model, dataloader, device="cuda"):
     """
-    Evaluate the domain classifier's accuracy.
-    
-   Parameters
-   ----------
-    model : torch.nn.Module
-        Trained domain classifier model.
-    dataloader : torch.utils.data.DataLoader
-        DataLoader for the test set.
-    device : str
-        Device to run evaluation on.
-    
-    Returns
-    -------
-    float
-        Domain classification accuracy.
+     Evaluate the domain classifier's accuracy.
+
+    Parameters
+    ----------
+     model : torch.nn.Module
+         Trained domain classifier model.
+     dataloader : torch.utils.data.DataLoader
+         DataLoader for the test set.
+     device : str
+         Device to run evaluation on.
+
+     Returns
+     -------
+     float
+         Domain classification accuracy.
     """
     model.eval()
     correct = 0

@@ -7,7 +7,10 @@ from .. import config as C
 
 C.setup_plotting_config()
 
-def visualize_features_fast(model, train_loader, test_loader, n_samples=2000, test_domain_label=4, device="cuda"):
+
+def visualize_features_fast(
+    model, train_loader, test_loader, n_samples=2000, test_domain_label=4, device="cuda"
+):
     """
     Visualize features using t-SNE. This function is optimized for speed.
 
@@ -25,7 +28,7 @@ def visualize_features_fast(model, train_loader, test_loader, n_samples=2000, te
         Domain label for the test set.
     device : str
         Device to run visualization on.
-    
+
     Returns
     -------
     np.ndarray
@@ -50,7 +53,9 @@ def visualize_features_fast(model, train_loader, test_loader, n_samples=2000, te
             X_batch = X_batch.to(device)
             feats = model.feature_extractor(X_batch).cpu().numpy()
             features.append(feats)
-            domains.append(np.full(feats.shape[0], test_domain_label))  # Test domain label=4
+            domains.append(
+                np.full(feats.shape[0], test_domain_label)
+            )  # Test domain label=4
 
     features = np.concatenate(features)
     domains = np.concatenate(domains)
@@ -63,11 +68,11 @@ def visualize_features_fast(model, train_loader, test_loader, n_samples=2000, te
     # t-SNE with faster parameters
     tsne = TSNE(n_components=2, perplexity=30, max_iter=300, random_state=42)
     embeddings = tsne.fit_transform(features)
-    
+
     return embeddings, domains
 
 
-def plot_combined_tsne(embeddings, domains, train_domains=[0,1,2,3], test_domain=4):
+def plot_combined_tsne(embeddings, domains, train_domains=[0, 1, 2, 3], test_domain=4):
     """
     Plot t-SNE embeddings of the feature space.
 
@@ -81,23 +86,33 @@ def plot_combined_tsne(embeddings, domains, train_domains=[0,1,2,3], test_domain
         List of training domain labels.
     test_domain : int
         Test domain label.
-    
+
     Returns
     -------
     None
     """
     plt.figure(figsize=(12, 8))
-    
+
     # Plot training domains (0-3)
     for domain in train_domains:
-        mask = (domains == domain)
-        plt.scatter(embeddings[mask, 0], embeddings[mask, 1], 
-                    label=f"Train Domain {domain}", alpha=0.6)
+        mask = domains == domain
+        plt.scatter(
+            embeddings[mask, 0],
+            embeddings[mask, 1],
+            label=f"Train Domain {domain}",
+            alpha=0.6,
+        )
 
     # Plot test domain (4)
-    mask = (domains == test_domain)
-    plt.scatter(embeddings[mask, 0], embeddings[mask, 1], 
-                color='black', marker='x', label="Test Domain", alpha=0.6)
+    mask = domains == test_domain
+    plt.scatter(
+        embeddings[mask, 0],
+        embeddings[mask, 1],
+        color="black",
+        marker="x",
+        label="Test Domain",
+        alpha=0.6,
+    )
 
     plt.legend()
     # plt.title("t-SNE of Feature Space (Train vs Test)")

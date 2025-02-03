@@ -50,17 +50,13 @@ class SimulationDataset:
 
         X_test_tensor = torch.tensor(scaler.fit_transform(X_test), dtype=torch.float32)
         Y_test_tensor = torch.tensor(Y_test, dtype=torch.float32)
-        domain_labels_tensor_test = torch.tensor(
-            domain_labels_test, dtype=torch.long
-        )
+        domain_labels_tensor_test = torch.tensor(domain_labels_test, dtype=torch.long)
 
         # Create datasets
         train_dataset = TensorDataset(
             X_train_tensor, Y_train_tensor, domain_labels_tensor
         )
-        test_dataset = TensorDataset(
-            X_test_tensor, Y_test_tensor
-        )
+        test_dataset = TensorDataset(X_test_tensor, Y_test_tensor)
 
         # Create DataLoaders
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
