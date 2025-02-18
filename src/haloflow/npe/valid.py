@@ -1,6 +1,5 @@
 from haloflow import data as D
 from haloflow import util as U
-
 import numpy as np
 import torch
 from tarp import get_tarp_coverage
@@ -10,7 +9,7 @@ def validate_npe(train_obs, train_sim,
                 device='cpu',
                 data_dir='/xdisk/chhahn/chhahn/haloflow/hf2/npe', 
                 n_ensemble=5,
-                n_samples = 10_000,
+                n_samples=10_000,
                 train_samples=None,
                 version=1):
     """
@@ -20,68 +19,50 @@ def validate_npe(train_obs, train_sim,
     NDEs on the test set.
     """
 
-    # Load the NDEs trained on the training set
+    # Load NDEs
     qphis = U.read_best_ndes(
         f'h2.v1.{train_sim}.{train_obs}',
         n_ensemble=n_ensemble, device=device,
-        dat_dir=data_dir,
-        verbose=True)
-    
-    # read test data
+        dat_dir=data_dir, verbose=True)
+
+    # Load test data
     Y_test, X_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
-
-
-    # choose a subset of the test set
+    
+    # Select subset if needed
     if train_samples is not None:
         np.random.seed(42)
-        idx = np.random.choice(np.arange(Y_test.shape[0]), train_samples, replace=False)
-        # Y_test = Y_test[idx]
-        # X_test = X_test[idx]
-
-        # make sure the samples are used in the same order
-        train_samples_len = idx
-    else:
-        train_samples_len = range(len(Y_test))
-
-    ranks = []
-    y_nde = []
-
-    # move X_test to device once
-    Y_test_torch = torch.tensor(Y_test, dtype=torch.float32).to(device)
-    X_test_torch = torch.tensor(X_test, dtype=torch.float32).to(device)
-
-    for i in train_samples_len:
-        # sample in GPU and concatenate
-        y_samp = []
-        for qphi in qphis:
-            _samp = qphi.sample(
-                (int(n_samples / len(qphis)),),
-                x=X_test_torch[i],
-                show_progress_bars=False
-            )
-            y_samp.append(_samp)
-        y_cat = torch.cat(y_samp, dim=0)
-
-        # compute ranks in a vectorized way
-        ranks.append((y_cat < Y_test_torch[i]).float().mean(dim=0).cpu().numpy())
-
-        # store samples in CPU
-        y_nde.append(y_cat.cpu().numpy())
-
-    ranks = np.array(ranks)
-    y_nde = np.array(y_nde)
-
-    if train_samples is not None:
+        idx = np.random.choice(len(Y_test), train_samples, replace=False)
         Y_test = Y_test[idx]
-        
-    # calculate TARP coverages
+        X_test = X_test[idx]
+
+    # Convert test data to tensors once (on GPU if available)
+    Y_test_torch = torch.tensor(Y_test, dtype=torch.float32, device=device)
+    X_test_torch = torch.tensor(X_test, dtype=torch.float32, device=device)
+
+    # Pre-allocate memory
+    num_test_samples = len(Y_test)
+    ranks = np.empty((num_test_samples, Y_test.shape[1]), dtype=np.float32)
+    y_nde = np.empty((num_test_samples, n_samples, Y_test.shape[1]), dtype=np.float32)
+
+    # Sample in batches to optimize performance
+    for i in range(num_test_samples):
+        y_samp = torch.cat([
+            qphi.sample((n_samples // len(qphis),), x=X_test_torch[i], show_progress_bars=False)
+            for qphi in qphis
+        ], dim=0)  # Collect all samples at once
+
+        # Compute ranks in a vectorized way
+        ranks[i] = (y_samp < Y_test_torch[i]).float().mean(dim=0).cpu().numpy()
+
+        # Store samples efficiently
+        y_nde[i] = y_samp.cpu().numpy()
+
+    # Calculate TARP coverages
     ecp, alpha = get_tarp_coverage(
         np.swapaxes(y_nde, 0, 1),
         Y_test,
         references="random",
-        metric="euclidean",
+        metric="euclidean"
     )
-    # if we draw from same prior, posteriors dervied from the same prior
-    # should have the same ECP and alpha
 
     return ranks, alpha, ecp, y_nde
