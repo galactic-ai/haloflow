@@ -1,13 +1,16 @@
-import test
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
-from .utils import EarlyStopper
-from .model import DANN
-from .data_loader import SimulationDataset
-from ..config import get_dat_dir
+# from .utils import EarlyStopper
+# from .model import DANN
+# from .data_loader import SimulationDataset
+# from ..config import get_dat_dir
+from . import utils as U
+from . import model as M
+from . import data_loader as D
+from .. import config as C
 
 try:
     import wandb
@@ -22,10 +25,10 @@ def train_dann(config, use_wandb=True):
         wandb.init(config=config)
         config = wandb.config # Overwrite config with W&B config
 
-    dataset = SimulationDataset(
+    dataset = D.SimulationDataset(
         config["sims"], 
         config["obs"], 
-        get_dat_dir()
+        C.get_dat_dir()
     )
     # choose a test sim not in train_sim
     test_sim = [sim for sim in config["sims"] if sim not in config["train_sim"]][0]
@@ -40,7 +43,7 @@ def train_dann(config, use_wandb=True):
     config['input_dim'] = sample_X.shape[1]
 
     # Model
-    model = DANN(
+    model = M.DANN(
         input_dim=config["input_dim"],
         feature_layers=config["feature_layers"],
         label_layers=config["label_layers"],
@@ -57,7 +60,7 @@ def train_dann(config, use_wandb=True):
     optimizer = optim.Adam(model.parameters(), lr=config["lr"])
 
     # Early stopping
-    early_stopper = EarlyStopper(
+    early_stopper = U.EarlyStopper(
         patience=config["es_patience"], 
         min_delta=config["es_min_delta"],
     )
