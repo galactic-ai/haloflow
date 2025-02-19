@@ -26,6 +26,11 @@ def train_dann(
     # Early stopping
     early_stopper = EarlyStopper(patience=patience, min_delta=min_delta)
 
+    # Scheduler
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.1, patience=5, verbose=True
+    )
+
     # Move model to device
     model = model.to(device)
 
@@ -65,6 +70,7 @@ def train_dann(
         if early_stopper.early_stop(ave_loss_test):
             print("Early stopping")
             break
+        scheduler.step(ave_loss_test)
         print(f"Epoch {epoch + 1}, Loss: {avg_loss:.4f}, Test Loss: {ave_loss_test:.4f}")
 
 
