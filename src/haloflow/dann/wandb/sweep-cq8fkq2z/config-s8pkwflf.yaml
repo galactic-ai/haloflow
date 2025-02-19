@@ -1,0 +1,41 @@
+wandb_version: 1
+
+alpha:
+  value: 1.4721830568728242
+batch_size:
+  value: 64
+domain_layers:
+  value:
+  - 16
+  - 8
+es_min_delta:
+  value: 0.001
+es_patience:
+  value: 5
+feature_layers:
+  value:
+  - 64
+  - 16
+label_layers:
+  value:
+  - 16
+  - 8
+lr:
+  value: 0.005725220102601088
+num_epochs:
+  value: 50
+obs:
+  value: mags_morph_extra
+sims:
+  value:
+  - TNG50
+  - TNG100
+  - Eagle100
+  - Simba100
+  - TNG_ALL
+train_sim:
+  value:
+  - TNG50
+  - Eagle100
+  - Simba100
+  - TNG_ALL

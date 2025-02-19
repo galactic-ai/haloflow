@@ -18,9 +18,8 @@ parameters:
       - ["TNG100", "Eagle100", "Simba100", "TNG_ALL"]
   
   lr:  # Learning rate
-    distribution: log_uniform
-    min: 2e-5
-    max: 1e-2
+    min: 0.0001
+    max: 0.01
   batch_size:
     values: [32, 64, 128]  # Discrete choices
   num_epochs:
