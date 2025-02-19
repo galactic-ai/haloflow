@@ -1,3 +1,4 @@
+import test
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -13,7 +14,7 @@ try:
 except ImportError:
     wandb = None
 
-def train_dann(config, use_wandb=False):
+def train_dann(config, use_wandb=True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Initialize W&B
@@ -26,9 +27,11 @@ def train_dann(config, use_wandb=False):
         config["obs"], 
         get_dat_dir()
     )
+    # choose a test sim not in train_sim
+    test_sim = [sim for sim in config["sims"] if sim not in config["train_sim"]][0]
     train_loader, test_loader = dataset.get_train_test_loaders(
         config["train_sim"],
-        config["test_sim"],
+        test_sim,
         config["batch_size"],
     )
 
@@ -43,8 +46,7 @@ def train_dann(config, use_wandb=False):
         label_layers=config["label_layers"],
         domain_layers=config["domain_layers"],
         alpha=config["alpha"],
-        num_domains=config["num_domains"],
-        output_dim=config["output_dim"]
+        num_domains=len(config["train_sim"]),
     ).to(device)
 
     # Loss functions
@@ -112,7 +114,7 @@ def train_dann(config, use_wandb=False):
             print(f"Train Loss: {avg_loss:.4f}, Test Loss: {loss_test:.4f}")
 
         # Early stopping
-        if early_stopper.early_stop(loss_test):
+        if not use_wandb and early_stopper.early_stop(loss_test):
             print("Early stopping")
             break
 
@@ -121,9 +123,9 @@ def train_dann(config, use_wandb=False):
     
     # save model
     if use_wandb and wandb is not None:
-        torch.save(model.state_dict(), f'{get_dat_dir()}/hf2/dann/dann_model_{wandb.run.id}.pt')
+        torch.save(model.state_dict(), f'{get_dat_dir()}/hf2/dann/models/dann_model_{wandb.run.id}.pt')
     else:
-        torch.save(model.state_dict(), f'{get_dat_dir()}/hf2/dann/dann_model_final.pt')
+        torch.save(model.state_dict(), f'{get_dat_dir()}/hf2/dann/models/dann_model_final.pt')
     
 
 
