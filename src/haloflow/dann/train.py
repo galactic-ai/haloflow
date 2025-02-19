@@ -3,9 +3,18 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
+from .utils import EarlyStopper
+
 
 def train_dann(
-    model, train_loader, test_loader, num_epochs=50, lr=0.001, device="cuda"
+    model, 
+    train_loader, 
+    test_loader, 
+    num_epochs=50, 
+    lr=0.001, 
+    patience=5,  # Early stopping patience
+    min_delta=0.001,  # Minimum change in loss to qualify as an improvement
+    device="cuda"
 ):
     # Loss functions
     criterion_task = nn.MSELoss()  # For stellar/halo mass prediction (regression)
@@ -13,6 +22,9 @@ def train_dann(
 
     # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr)
+
+    # Early stopping
+    early_stopper = EarlyStopper(patience=patience, min_delta=min_delta)
 
     # Move model to device
     model = model.to(device)
@@ -47,10 +59,13 @@ def train_dann(
 
         # Print epoch loss
         avg_loss = total_loss / len(train_loader)
-        print(f"Epoch {epoch + 1}, Loss: {avg_loss:.4f}")
 
         # Evaluate on test domain (optional)
-        evaluate(model, test_loader, device)
+        ave_loss_test = evaluate(model, test_loader, device)
+        if early_stopper.early_stop(ave_loss_test):
+            print("Early stopping")
+            break
+        print(f"Epoch {epoch + 1}, Loss: {avg_loss:.4f}, Test Loss: {ave_loss_test:.4f}")
 
 
 def evaluate(model, test_loader, device="cuda"):
@@ -64,4 +79,4 @@ def evaluate(model, test_loader, device="cuda"):
             total_mse += nn.MSELoss()(label_pred, y_batch).item()
 
     avg_mse = total_mse / len(test_loader)
-    print(f"Test MSE: {avg_mse:.4f}")
+    return avg_mse
