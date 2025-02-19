@@ -4,37 +4,68 @@ import torch.optim as optim
 from tqdm import tqdm
 
 from .utils import EarlyStopper
+from .model import DANN
+from .data_loader import SimulationDataset
+from ..config import get_dat_dir
 
+try:
+    import wandb
+except ImportError:
+    wandb = None
 
-def train_dann(
-    model, 
-    train_loader, 
-    test_loader, 
-    num_epochs=50, 
-    lr=0.001, 
-    patience=5,  # Early stopping patience
-    min_delta=0.001,  # Minimum change in loss to qualify as an improvement
-    device="cuda"
-):
+def train_dann(config, use_wandb=False):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Initialize W&B
+    if use_wandb and wandb is not None:
+        wandb.init(config=config)
+        config = wandb.config # Overwrite config with W&B config
+
+    dataset = SimulationDataset(
+        config["sims"], 
+        config["obs"], 
+        get_dat_dir()
+    )
+    train_loader, test_loader = dataset.get_train_test_loaders(
+        config["train_sim"],
+        config["test_sim"],
+        config["batch_size"],
+    )
+
+    # Infer input dimension from data
+    sample_X, _, _ = next(iter(train_loader))
+    config['input_dim'] = sample_X.shape[1]
+
+    # Model
+    model = DANN(
+        input_dim=config["input_dim"],
+        feature_layers=config["feature_layers"],
+        label_layers=config["label_layers"],
+        domain_layers=config["domain_layers"],
+        alpha=config["alpha"],
+        num_domains=config["num_domains"],
+        output_dim=config["output_dim"]
+    ).to(device)
+
     # Loss functions
     criterion_task = nn.MSELoss()  # For stellar/halo mass prediction (regression)
     criterion_domain = nn.CrossEntropyLoss()  # For domain classification
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=config["lr"])
 
     # Early stopping
-    early_stopper = EarlyStopper(patience=patience, min_delta=min_delta)
+    early_stopper = EarlyStopper(
+        patience=config["es_patience"], 
+        min_delta=config["es_min_delta"],
+    )
 
     # Scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.1, patience=5, verbose=True
     )
 
-    # Move model to device
-    model = model.to(device)
-
-    for epoch in range(num_epochs):
+    for epoch in range(config["num_epochs"]):
         model.train()
         total_loss = 0.0
 
@@ -66,12 +97,34 @@ def train_dann(
         avg_loss = total_loss / len(train_loader)
 
         # Evaluate on test domain (optional)
-        ave_loss_test = evaluate(model, test_loader, device)
-        if early_stopper.early_stop(ave_loss_test):
+        loss_test = evaluate(model, test_loader, device)
+
+        # Log to W&B or print locally
+        if use_wandb and wandb is not None:
+            wandb.log({
+                "epoch": epoch,
+                "train_loss": avg_loss,
+                "test_loss": loss_test,
+                "lr": optimizer.param_groups[0]["lr"]
+            })
+        else:
+            print(f"Epoch {epoch + 1}/{config['num_epochs']}")
+            print(f"Train Loss: {avg_loss:.4f}, Test Loss: {loss_test:.4f}")
+
+        # Early stopping
+        if early_stopper.early_stop(loss_test):
             print("Early stopping")
             break
-        scheduler.step(ave_loss_test)
-        print(f"Epoch {epoch + 1}, Loss: {avg_loss:.4f}, Test Loss: {ave_loss_test:.4f}")
+
+        # Scheduler step
+        scheduler.step(loss_test)
+    
+    # save model
+    if use_wandb and wandb is not None:
+        torch.save(model.state_dict(), f'{get_dat_dir()}/hf2/dann/dann_model_{wandb.run.id}.pt')
+    else:
+        torch.save(model.state_dict(), f'{get_dat_dir()}/hf2/dann/dann_model_final.pt')
+    
 
 
 def evaluate(model, test_loader, device="cuda"):
