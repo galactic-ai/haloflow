@@ -1,0 +1,45 @@
+program: train.py
+method: bayes
+metric:
+  name: test_loss 
+  goal: minimize  # We want to minimize test loss
+parameters:
+  sims: # Simulaton data
+    values: [['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']]
+  obs: 
+    values: ['mags', 'mags_morph', 'mags_morph_extra']
+
+  train_sim:  # Always select 4 out of the 5 simulations
+    values:
+      - ["TNG50", "TNG100", "Eagle100", "Simba100"]  
+      - ["TNG50", "TNG100", "Eagle100", "TNG_ALL"]
+      - ["TNG50", "TNG100", "Simba100", "TNG_ALL"]
+      - ["TNG50", "Eagle100", "Simba100", "TNG_ALL"]
+      - ["TNG100", "Eagle100", "Simba100", "TNG_ALL"]
+  
+  lr:  # Learning rate
+    distribution: log_uniform
+    min: 2e-5
+    max: 1e-2
+  batch_size:
+    values: [32, 64, 128]  # Discrete choices
+  num_epochs:
+    values: [20, 50, 100, 200]
+  alpha:
+    distribution: uniform  # Domain adaptation trade-off
+    min: 0.1
+    max: 1.5
+  feature_layers:  # Feature extractor architecture
+    values: [[64, 16]]
+  label_layers:  # Label predictor layers
+    values: [[16, 8]]
+  domain_layers:  # Domain classifier layers
+    values: [[16, 8]]
+  
+  es_patience:  # Early stopping patience
+    values: [5]
+  es_min_delta:  # Early stopping minimum delta
+    values: [0.001]
+early_terminate:
+  type: hyperband
+  min_iter: 5

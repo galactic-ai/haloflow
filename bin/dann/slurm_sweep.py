@@ -30,10 +30,10 @@ def slurm_sweep(n_cores, hr=12, gpu=True, mig=True):
         "cd haloflow",
         "source venv/bin/activate",
         "",
-        "cd src/haloflow/dann/",
+        "cd bin/dann/",
         "",
         #"wandb sweep wandb.yaml --project dann_sweep > sweep_id.log",
-        "sweep_id=nikhil0504/dann_sweep/cq8fkq2z"
+        "sweep_id=nikhil0504/dann_sweep/voux5aby"
         f"""
         for i in $(seq 1 {n_cores}); do
             wandb agent $sweep_id &
@@ -54,4 +54,4 @@ def slurm_sweep(n_cores, hr=12, gpu=True, mig=True):
     return None
 
 if __name__ == "__main__":
-    slurm_sweep(n_cores=10, hr=12, gpu=False, mig=False)
+    slurm_sweep(n_cores=24, hr=12, gpu=False, mig=False)

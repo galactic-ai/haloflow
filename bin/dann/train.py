@@ -3,14 +3,10 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
-# from .utils import EarlyStopper
-# from .model import DANN
-# from .data_loader import SimulationDataset
-# from ..config import get_dat_dir
-from . import utils as U
-from . import model as M
-from . import data_loader as D
-from .. import config as C
+from haloflow.dann import utils as U
+from haloflow.dann import model as M
+from haloflow.dann import data_loader as D
+from haloflow import config as C
 
 try:
     import wandb
@@ -126,9 +122,9 @@ def train_dann(config, use_wandb=True):
     
     # save model
     if use_wandb and wandb is not None:
-        torch.save(model.state_dict(), f'{get_dat_dir()}/hf2/dann/models/dann_model_{wandb.run.id}.pt')
+        torch.save(model.state_dict(), f'{C.get_dat_dir()}/hf2/dann/models/dann_model_{wandb.run.id}.pt')
     else:
-        torch.save(model.state_dict(), f'{get_dat_dir()}/hf2/dann/models/dann_model_final.pt')
+        torch.save(model.state_dict(), f'{C.get_dat_dir()}/hf2/dann/models/dann_model_final.pt')
     
 
 
