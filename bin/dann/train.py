@@ -15,6 +15,7 @@ except ImportError:
 
 def train_dann(config, use_wandb=True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']
 
     # Initialize W&B
     if use_wandb and wandb is not None:
@@ -22,12 +23,12 @@ def train_dann(config, use_wandb=True):
         config = wandb.config # Overwrite config with W&B config
 
     dataset = D.SimulationDataset(
-        config["sims"], 
+        sims, 
         config["obs"], 
         C.get_dat_dir()
     )
     # choose a test sim not in train_sim
-    test_sim = [sim for sim in config["sims"] if sim not in config["train_sim"]][0]
+    test_sim = [sim for sim in sims if sim not in config["train_sim"]][0]
     train_loader, test_loader = dataset.get_train_test_loaders(
         config["train_sim"],
         test_sim,

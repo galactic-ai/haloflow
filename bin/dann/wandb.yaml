@@ -4,8 +4,6 @@ metric:
   name: test_loss 
   goal: minimize  # We want to minimize test loss
 parameters:
-  sims: # Simulaton data
-    values: [['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']]
   obs: 
     values: ['mags', 'mags_morph', 'mags_morph_extra']
 
@@ -18,9 +16,8 @@ parameters:
       - ["TNG100", "Eagle100", "Simba100", "TNG_ALL"]
   
   lr:  # Learning rate
-    distribution: log_uniform
-    min: 2e-5
-    max: 1e-2
+    min: 0.0001
+    max: 0.01
   batch_size:
     values: [32, 64, 128]  # Discrete choices
   num_epochs:
