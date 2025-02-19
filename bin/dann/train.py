@@ -140,3 +140,7 @@ def evaluate(model, test_loader, device="cuda"):
 
     avg_mse = total_mse / len(test_loader)
     return avg_mse
+
+if __name__ == "__main__":
+    config = {}
+    train_dann(config, use_wandb=True)
