@@ -49,7 +49,7 @@ def visualize_features_fast(
 
     # Process test data (assign domain=4)
     with torch.no_grad():
-        for X_batch, _ in test_loader:
+        for X_batch, _, _ in test_loader:
             X_batch = X_batch.to(device)
             feats = model.feature_extractor(X_batch).cpu().numpy()
             features.append(feats)
@@ -91,7 +91,7 @@ def plot_combined_tsne(embeddings, domains, train_domains=[0, 1, 2, 3], test_dom
     -------
     None
     """
-    plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(12, 8))
 
     # Plot training domains (0-3)
     for domain in train_domains:
@@ -116,4 +116,5 @@ def plot_combined_tsne(embeddings, domains, train_domains=[0, 1, 2, 3], test_dom
 
     plt.legend()
     # plt.title("t-SNE of Feature Space (Train vs Test)")
-    plt.show()
+#     plt.show()
+    return fig

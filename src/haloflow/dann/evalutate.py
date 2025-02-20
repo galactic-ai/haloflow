@@ -73,5 +73,4 @@ def domain_accuracy(model, dataloader, device="cuda"):
             total += domain_batch.size(0)
 
     acc = correct / total
-    print(f"Domain Accuracy: {acc:.4f}")
     return acc

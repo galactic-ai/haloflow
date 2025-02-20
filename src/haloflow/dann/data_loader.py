@@ -67,7 +67,7 @@ class SimulationDataset:
         train_dataset = TensorDataset(
             X_train_tensor, Y_train_tensor, domain_labels_tensor
         )
-        test_dataset = TensorDataset(X_test_tensor, Y_test_tensor)
+        test_dataset = TensorDataset(X_test_tensor, Y_test_tensor, domain_labels_tensor_test)
 
         # Create DataLoaders
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)

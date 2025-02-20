@@ -6,6 +6,8 @@ from tqdm import tqdm
 from haloflow.dann import utils as U
 from haloflow.dann import model as M
 from haloflow.dann import data_loader as D
+from haloflow.dann import evalutate as E
+from haloflow.dann import visualise as V
 from haloflow import config as C
 
 try:
@@ -13,7 +15,7 @@ try:
 except ImportError:
     wandb = None
 
-def train_dann(config, use_wandb=True):
+def train_dann(config, use_wandb=True, plots=True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100', 'TNG_ALL']
 
@@ -48,6 +50,8 @@ def train_dann(config, use_wandb=True):
         alpha=config["alpha"],
         num_domains=len(config["train_sim"]),
     ).to(device)
+    
+    wandb.watch(model, log='all')
 
     # Loss functions
     criterion_task = nn.MSELoss()  # For stellar/halo mass prediction (regression)
@@ -100,26 +104,33 @@ def train_dann(config, use_wandb=True):
 
         # Evaluate on test domain (optional)
         loss_test = evaluate(model, test_loader, device)
-
+        domain_acc = E.domain_accuracy(model, train_loader, device)
         # Log to W&B or print locally
         if use_wandb and wandb is not None:
             wandb.log({
                 "epoch": epoch,
                 "train_loss": avg_loss,
                 "test_loss": loss_test,
-                "lr": optimizer.param_groups[0]["lr"]
+                "lr": optimizer.param_groups[0]["lr"],
+                "domain_accuracy": domain_acc
             })
         else:
             print(f"Epoch {epoch + 1}/{config['num_epochs']}")
-            print(f"Train Loss: {avg_loss:.4f}, Test Loss: {loss_test:.4f}")
+            print(f"Train Loss: {avg_loss:.4f}, Test Loss: {loss_test:.4f}, Domain Accuracy: {domain_acc:.4f}")
 
         # Early stopping
-        if not use_wandb and early_stopper.early_stop(loss_test):
+        if early_stopper.early_stop(loss_test):
             print("Early stopping")
             break
 
         # Scheduler step
         scheduler.step(loss_test)
+        
+    if plots:
+        emb, labels = V.visualize_features_fast(model, train_loader, test_loader, n_samples=5000, device='cpu')
+        fig = V.plot_combined_tsne(emb, labels,)
+        if use_wandb and wandb is not None:
+            wandb.log({'TNSE_Plot': wandb.Image(fig)})
     
     # save model
     if use_wandb and wandb is not None:
@@ -134,7 +145,7 @@ def evaluate(model, test_loader, device="cuda"):
     total_mse = 0.0
 
     with torch.no_grad():
-        for X_batch, y_batch in test_loader:
+        for X_batch, y_batch, _ in test_loader:
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
             label_pred, _ = model(X_batch)
             total_mse += nn.MSELoss()(label_pred, y_batch).item()

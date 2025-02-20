@@ -5,7 +5,9 @@ metric:
   goal: minimize  # We want to minimize test loss
 parameters:
   obs: 
-    values: ['mags', 'mags_morph', 'mags_morph_extra']
+#     values: ['mags', 'mags_morph', 'mags_morph_extra']
+    values: ['mags_morph_extra']
+
 
   train_sim:  # Always select 4 out of the 5 simulations
     values:
@@ -21,7 +23,7 @@ parameters:
   batch_size:
     values: [32, 64, 128]  # Discrete choices
   num_epochs:
-    values: [20, 50, 100, 200]
+    values: [100, 200]
   alpha:
     distribution: uniform  # Domain adaptation trade-off
     min: 0.1
@@ -34,9 +36,9 @@ parameters:
     values: [[16, 8]]
   
   es_patience:  # Early stopping patience
-    values: [5]
+    values: [10]
   es_min_delta:  # Early stopping minimum delta
-    values: [0.001]
-early_terminate:
-  type: hyperband
-  min_iter: 5
+    values: [0.01]
+#early_terminate:
+#  type: hyperband
+#  min_iter: 5

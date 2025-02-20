@@ -4,8 +4,8 @@ def slurm_sweep(n_cores, hr=12, gpu=True, mig=True):
     """
     WandB sweep for DANN finetuning.
     """
-    jname = f"sweep.dann.{n_cores}"
-    ofile = f"o/_sweep.dann.{n_cores}"
+    jname = f"sweep.dann.{str(n_cores)}"
+    ofile = f"o/_{jname}"
 
     script = '\n'.join([
         '#!/bin/bash',
@@ -33,7 +33,7 @@ def slurm_sweep(n_cores, hr=12, gpu=True, mig=True):
         "cd bin/dann/",
         "",
         #"wandb sweep wandb.yaml --project dann_sweep > sweep_id.log",
-        "sweep_id=nikhil0504/dann_sweep/voux5aby"
+        "sweep_id=nikhil0504/dann_sweep/uh5lo65f",
         f"""
         for i in $(seq 1 {n_cores}); do
             wandb agent $sweep_id &
@@ -54,4 +54,4 @@ def slurm_sweep(n_cores, hr=12, gpu=True, mig=True):
     return None
 
 if __name__ == "__main__":
-    slurm_sweep(n_cores=24, hr=12, gpu=False, mig=False)
+    slurm_sweep(n_cores=24, hr=12, gpu=True, mig=False)
