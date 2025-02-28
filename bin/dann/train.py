@@ -90,7 +90,9 @@ def train_dann(config, use_wandb=True, plots=True):
             # Compute losses
             loss_task = criterion_task(label_pred, y_batch)
             loss_domain = criterion_domain(domain_pred, domain_batch)
-            loss = loss_task + loss_domain  # Total loss
+            # Domain loss should be subtracted as the 
+            # domain classifier is trying to minimize it
+            loss = loss_task - loss_domain  # Total loss
 
             # Backward pass
             optimizer.zero_grad()
