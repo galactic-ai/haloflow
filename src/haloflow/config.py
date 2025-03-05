@@ -4,12 +4,16 @@ import matplotlib as mpl
 def get_dat_dir(): 
     ''' get dat_dir based on machine 
     '''
-    if os.environ['machine'] == 'della': 
-        return '/scratch/gpfs/chhahn/haloflow/'
-    elif os.environ['machine'] == 'puma': 
-        return '/xdisk/chhahn/chhahn/haloflow/'
-    else: 
-        raise ValueError
+    try:
+        if os.environ['machine'] == 'della': 
+            return '/scratch/gpfs/chhahn/haloflow/'
+        elif os.environ['machine'] == 'puma': 
+            return '/xdisk/chhahn/chhahn/haloflow/'
+    except KeyError:
+        return '../../data/'
+    # else: 
+        # raise ValueError
+        # return '../../data/'
 
 
 def setup_plotting_config():

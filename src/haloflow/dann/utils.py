@@ -20,6 +20,9 @@ class GradientReversalLayer(torch.nn.Module):
     def forward(self, x):
         return GradientReversal.apply(x, self.alpha)
 
+    def update_alpha(self, alpha):
+        self.alpha = alpha
+
 class EarlyStopper:
     def __init__(self, patience=1, min_delta=0):
         self.patience = patience

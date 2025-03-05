@@ -7,57 +7,64 @@ from . import utils as U
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, input_dim, layers=[128, 64]):
+    def __init__(self, input_dim, layers=[128, 64], dropout=0.5):
         super().__init__()
         self.layers = nn.ModuleList([nn.Linear(input_dim, layers[0])])
-        self.layers.extend(
-            [nn.Linear(layers[i], layers[i + 1]) for i in range(len(layers) - 1)]
-        )
+        for i in range(len(layers) - 1):
+            self.layers.extend(
+                [
+                    nn.Linear(layers[i], layers[i + 1]),
+                    nn.Dropout(dropout),
+                ]
+            )
         self.relu = nn.ReLU()
 
     def forward(self, x):
         for layer in self.layers:
-            x = self.relu(layer(x))
+            if isinstance(layer, nn.Dropout):
+                x = layer(x)
+            else:
+                x = self.relu(layer(x))
         return x
 
 
 class LabelPredictor(nn.Module):
-    def __init__(self, label_layers=[64, 32], output_dim=2):
+    def __init__(self, label_layers=[64, 32], output_dim=2, dropout=0.5):
         super().__init__()
         self.layers = nn.ModuleList()
-        self.layers.extend(
-            [
-                nn.Linear(label_layers[i], label_layers[i + 1])
-                for i in range(len(label_layers) - 1)
-            ]
-        )
-        self.output = nn.Linear(
-            label_layers[-1], output_dim
-        )  # Output: [stellar_mass, halo_mass]
-        self.relu = nn.ReLU()
+        for i in range(len(label_layers) - 1):
+            self.layers.extend([
+                nn.Linear(label_layers[i], label_layers[i + 1]),
+                nn.ReLU(),
+                # nn.Dropout(dropout)
+            ])
+        self.output = nn.Linear(label_layers[-1], output_dim)
+        self.dropout = dropout
+        # Output: [stellar_mass, halo_mass]
 
     def forward(self, x):
         for layer in self.layers:
-            x = self.relu(layer(x))
+            x = layer(x)
         return self.output(x)
 
 
 class DomainClassifier(nn.Module):
     def __init__(self, domain_layers=[64, 32], num_domains=4, alpha=1.0):
         super().__init__()
-        self.layers = nn.ModuleList([U.GradientReversalLayer(alpha=alpha)])
-        self.layers.extend(
-            [
-                nn.Linear(domain_layers[i], domain_layers[i + 1])
-                for i in range(len(domain_layers) - 1)
-            ]
-        )
-        self.output = nn.Linear(domain_layers[-1], num_domains)  # Output: domain logits
-        self.relu = nn.ReLU()
+        self.grl = U.GradientReversalLayer(alpha=alpha)
+        self.layers = nn.ModuleList()
+        for i in range(len(domain_layers) - 1):
+            self.layers.extend([
+                nn.Linear(domain_layers[i], domain_layers[i + 1]),
+                nn.ReLU(),
+                # nn.Dropout(0.5)
+            ])
+        self.output = nn.Linear(domain_layers[-1], num_domains)
 
     def forward(self, x):
+        x = self.grl(x)
         for layer in self.layers:
-            x = self.relu(layer(x))
+            x = layer(x)
         return self.output(x)
 
 
@@ -73,6 +80,7 @@ class DANN(nn.Module):
         alpha=1.0,
     ):
         super().__init__()
+        print(f"Alpha in DANN: {alpha}")
         self.alpha = alpha
 
         # Feature Extractor (Shared)

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+import numpy as np
 
 from haloflow.dann import utils as U
 from haloflow.dann import model as M
@@ -28,6 +29,7 @@ def train_dann(config, use_wandb=True, plots=True):
         sims, 
         config["obs"], 
         C.get_dat_dir()
+        # '../../data/'
     )
     # choose a test sim not in train_sim
     test_sim = [sim for sim in sims if sim not in config["train_sim"]][0]
@@ -47,18 +49,19 @@ def train_dann(config, use_wandb=True, plots=True):
         feature_layers=config["feature_layers"],
         label_layers=config["label_layers"],
         domain_layers=config["domain_layers"],
-        alpha=config["alpha"],
+        alpha=0,
         num_domains=len(config["train_sim"]),
     ).to(device)
     
-    wandb.watch(model, log='all')
+    if use_wandb and wandb is not None:
+        wandb.watch(model, log='all')
 
     # Loss functions
     criterion_task = nn.MSELoss()  # For stellar/halo mass prediction (regression)
     criterion_domain = nn.CrossEntropyLoss()  # For domain classification
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=config["lr"])
+    optimizer = optim.Adam(model.parameters(), lr=config["lr"], weight_decay=1e-4)
 
     # Early stopping
     early_stopper = U.EarlyStopper(
@@ -68,16 +71,21 @@ def train_dann(config, use_wandb=True, plots=True):
 
     # Scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.1, patience=5, verbose=True
+        optimizer, mode="min", factor=0.1, patience=3, verbose=True
     )
 
     for epoch in range(config["num_epochs"]):
         model.train()
         total_loss = 0.0
 
+        i = 0
         for X_batch, y_batch, domain_batch in tqdm(
             train_loader, desc=f"Epoch {epoch + 1}"
         ):
+            p = float(i + epoch * len(train_loader)) / config["num_epochs"] / len(train_loader)
+            alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1.0
+            i += 1
+            model.domain_classifier.grl.update_alpha(alpha)
             X_batch, y_batch, domain_batch = (
                 X_batch.to(device),
                 y_batch.to(device),
@@ -92,7 +100,7 @@ def train_dann(config, use_wandb=True, plots=True):
             loss_domain = criterion_domain(domain_pred, domain_batch)
             # Domain loss should be subtracted as the 
             # domain classifier is trying to minimize it
-            loss = loss_task - loss_domain  # Total loss
+            loss = loss_task + loss_domain  # Total loss
 
             # Backward pass
             optimizer.zero_grad()
@@ -100,6 +108,7 @@ def train_dann(config, use_wandb=True, plots=True):
             optimizer.step()
 
             total_loss += loss.item()
+        print(f'Loss task: {loss_task.item()}, Loss domain: {loss_domain.item()}')
 
         # Print epoch loss
         avg_loss = total_loss / len(train_loader)

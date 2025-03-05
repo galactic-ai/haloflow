@@ -45,21 +45,29 @@ class SimulationDataset:
             [[i] * len(self.data[sim]["X_train"]) for i, sim in enumerate(train_sims)]
         )
 
-        scaler = StandardScaler()
+        # shuffle data
+        indices = np.arange(len(Y_train))
+        np.random.shuffle(indices)
+        X_train = X_train[indices]
+        Y_train = Y_train[indices]
+        domain_labels = domain_labels[indices]
 
         # Get test data
         X_test = self.data[test_sim]["X_test"]
         Y_test = self.data[test_sim]["Y_test"]
         domain_labels_test = np.full(len(Y_test), len(train_sims))
 
+        # Scale data
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+
         # Convert to tensors
-        X_train_tensor = torch.tensor(
-            scaler.fit_transform(X_train), dtype=torch.float32
-        )
+        X_train_tensor = torch.tensor(X_train_scaled, dtype=torch.float32)
         Y_train_tensor = torch.tensor(Y_train, dtype=torch.float32)
         domain_labels_tensor = torch.tensor(domain_labels, dtype=torch.long)
 
-        X_test_tensor = torch.tensor(scaler.fit_transform(X_test), dtype=torch.float32)
+        X_test_tensor = torch.tensor(X_test_scaled, dtype=torch.float32)
         Y_test_tensor = torch.tensor(Y_test, dtype=torch.float32)
         domain_labels_tensor_test = torch.tensor(domain_labels_test, dtype=torch.long)
 
