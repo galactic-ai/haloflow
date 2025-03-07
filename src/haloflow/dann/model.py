@@ -80,7 +80,6 @@ class DANN(nn.Module):
         alpha=1.0,
     ):
         super().__init__()
-        print(f"Alpha in DANN: {alpha}")
         self.alpha = alpha
 
         # Feature Extractor (Shared)

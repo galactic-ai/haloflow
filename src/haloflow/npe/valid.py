@@ -4,6 +4,8 @@ import numpy as np
 import torch
 from tarp import get_tarp_coverage
 
+from haloflow.dann.get_preds import get_dann_preds
+
 def validate_npe(train_obs, train_sim, 
                 test_obs, test_sim, 
                 device='cpu',
@@ -12,7 +14,8 @@ def validate_npe(train_obs, train_sim,
                 n_samples=10_000,
                 train_samples=None,
                 version=1,
-                with_dann=False):
+                with_dann=False,
+                fp=None):
     """
     Function to validate the NDEs trained on the training set
     on the test set. This function returns the ranks of the
@@ -34,7 +37,11 @@ def validate_npe(train_obs, train_sim,
 
     # Load test data
     Y_test, X_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
-    
+
+    if with_dann:
+        label_pred, _ = get_dann_preds(fp, test_obs, test_sim)
+        X_test = label_pred.detach().numpy()
+
     # Select subset if needed
     if train_samples is not None:
         np.random.seed(42)
