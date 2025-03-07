@@ -147,7 +147,9 @@ def train_dann(config, use_wandb=True, plots=True):
     if use_wandb and wandb is not None:
         torch.save(model.state_dict(), f'{C.get_dat_dir()}/hf2/dann/models/dann_model_{wandb.run.id}.pt')
     else:
-        torch.save(model.state_dict(), f'{C.get_dat_dir()}/hf2/dann/models/dann_model_final.pt')
+        # naming model_train_sims_to_test_sim_obs_obs_lrlr_bsbs_eepoch_timestamp.pt
+        name = f'dann_model_{"_".join(config["train_sim"])}_to_{test_sim}_{config["obs"]}_lr{config["lr"]}_bs{config["batch_size"]}_e{epoch+1}_{U.get_timestamp()}.pt'
+        torch.save(model.state_dict(), f'{C.get_dat_dir()}/hf2/dann/models/{name}')
     
 
 

@@ -39,3 +39,8 @@ class EarlyStopper:
             if self.counter >= self.patience:
                 return True
         return False
+
+def get_timestamp():
+    import datetime
+    # will return a string like '2021-06-01'
+    return datetime.datetime.now().strftime("%Y-%m-%d")

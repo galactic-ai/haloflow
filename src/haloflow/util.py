@@ -39,7 +39,7 @@ def read_best_ndes(study_name, n_ensemble=5, device='cpu', dat_dir='/scratch/gpf
     qphis = []
     for i_model in i_models: 
         fqphi = os.path.join(dat_dir, '%s/%s.%i.pt' % (study_name, study_name, i_model))
-        qphi = torch.load(fqphi, map_location=device)
+        qphi = torch.load(fqphi, map_location=device, weights_only=False)
         qphis.append(qphi)
 
     return qphis
