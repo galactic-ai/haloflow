@@ -67,7 +67,8 @@ def plot_true_pred(ax, train_obs, train_sim,
                    test_obs, test_sim, device,
                    fmt='.C0',
                    mass='halo',
-                   use_weights=False):
+                   use_weights=False,
+                   **valid_kwargs):
     """
     Plotting script for true vs predicted values.
 
@@ -107,7 +108,7 @@ def plot_true_pred(ax, train_obs, train_sim,
     idx = np.random.choice(len(Y_test), 100, replace=False)
     y_true = Y_test[idx]
 
-    _, _, _, y_nde = V.validate_npe(train_obs, train_sim, test_obs, test_sim, device=device, train_samples=100, n_samples=1000)
+    _, _, _, y_nde = V.validate_npe(train_obs, train_sim, test_obs, test_sim, device=device, train_samples=100, n_samples=1000, **valid_kwargs)
 
     if use_weights:
         # apply weights to correct for SMF and HMF implicit prior
@@ -141,7 +142,7 @@ def plot_true_pred(ax, train_obs, train_sim,
         y_nde = np.stack([y_nde_resampled_Ms, y_nde_resampled_Mh], axis=-1)  # Shape: (100, 1000, 2)
 
     y_nde_q0, y_nde_q1, y_nde_q2 = np.quantile(y_nde, (0.16, 0.5, 0.84), axis=1)
-    ax.plot([9.5, 14.], [9.5, 14.], c='k', ls='--')
+    ax.plot([9.5, 14.], [9.5, 14.], c='k', ls='--', label='_nolegend_')
 
     # ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
     if mass == 'stellar':

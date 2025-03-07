@@ -11,7 +11,8 @@ def validate_npe(train_obs, train_sim,
                 n_ensemble=5,
                 n_samples=10_000,
                 train_samples=None,
-                version=1):
+                version=1,
+                with_dann=False):
     """
     Function to validate the NDEs trained on the training set
     on the test set. This function returns the ranks of the
@@ -20,10 +21,16 @@ def validate_npe(train_obs, train_sim,
     """
 
     # Load NDEs
-    qphis = U.read_best_ndes(
-        f'h2.v1.{train_sim}.{train_obs}',
-        n_ensemble=n_ensemble, device=device,
-        dat_dir=data_dir, verbose=True)
+    if with_dann:
+        qphis = U.read_best_ndes(
+            f'h2.dann.v{version}.{train_sim}.{train_obs}',
+            n_ensemble=n_ensemble, device=device,
+            dat_dir=data_dir, verbose=True)
+    else:
+        qphis = U.read_best_ndes(
+            f'h2.v{version}.{train_sim}.{train_obs}',
+            n_ensemble=n_ensemble, device=device,
+            dat_dir=data_dir, verbose=True)
 
     # Load test data
     Y_test, X_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)

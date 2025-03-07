@@ -6,7 +6,6 @@ from tqdm.notebook import tqdm, trange
 import haloflow.data as D
 
 import torch
-from torch import nn 
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import optuna 
@@ -39,12 +38,12 @@ prior = Ut.BoxUniform(low=lower_bounds, high=upper_bounds, device=device)
 # OPTUNA
 ##################################################################################
 # Optuna Parameters
-n_trials    = 1000
+n_trials    = 100
 study_name  = 'h2.v1.%s.%s' % (sim, obs) 
 
-output_dir = '/xdisk/chhahn/chhahn/haloflow/hf2/npe'
+output_dir = '../../data/hf2/dann/npe/'
 
-n_jobs     = 1
+n_jobs     = 8
 if not os.path.isdir(os.path.join(output_dir, study_name)): 
     os.system('mkdir %s' % os.path.join(output_dir, study_name))
 storage    = 'sqlite:///%s/%s/%s.db' % (output_dir, study_name, study_name)
