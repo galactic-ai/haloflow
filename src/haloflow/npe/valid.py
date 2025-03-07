@@ -39,6 +39,13 @@ def validate_npe(train_obs, train_sim,
     Y_test, X_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
 
     if with_dann:
+        if fp is None:
+            import glob
+            all_sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
+            rem_sims = '_'.join([s for s in all_sims if s != 'Simba100'])
+            fp = f'../../data/hf2/dann/models/dann_model_{rem_sims}_to_Simba100_{test_obs}_*.pt'
+            fp = glob.glob(fp)[0]
+        
         label_pred, _ = get_dann_preds(fp, test_obs, test_sim)
         X_test = label_pred.detach().numpy()
 

@@ -1,5 +1,6 @@
 #/bin/python 
 import sys
+from glob import glob
 
 from haloflow.dann.get_preds import get_dann_preds
 from haloflow.npe.optuna_training import NPEOptunaTraining
@@ -17,10 +18,15 @@ all_sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
 
 if sim not in all_sims: raise ValueError
 
+rem_sims = '_'.join([s for s in all_sims if s != 'Simba100'])
+# fp = f'../../data/hf2/dann/models/dann_model_{rem_sims}_to_{sim}_{obs}_*.pt'
+fp = f'../../data/hf2/dann/models/dann_model_{rem_sims}_to_Simba100_{obs}_*.pt'
+fp = glob(fp)[0]
+
 ##################################################################################
 # read in training data 
 y_test, x_test = D.hf2_centrals('test', obs, sim=sim, version=1)
-label_pred, domain_pred = get_dann_preds('../../data/hf2/dann/models/dann_model_TNG50_TNG100_Eagle100_to_Simba100_mags_lr0.001_bs32_e100_2025-03-05.pt', obs, sim)
+label_pred, domain_pred = get_dann_preds(fp, obs, sim)
 x_test = label_pred.detach().numpy()
 
 # Optuna Parameters
