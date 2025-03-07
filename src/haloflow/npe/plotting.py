@@ -29,7 +29,7 @@ def plot_rank_statistics(ranks_list, labels):
         axes[i].set_xlim(0., 1.)
         axes[i].set_ylim(0., 3.)
         axes[i].set_yticks([])
-        axes[i].text(0.05, 0.95, f'Rank {i+1}', fontsize=20, transform=axes[i].transAxes, ha='left', va='top')
+        # axes[i].text(0.05, 0.95, f'Rank {i+1}', fontsize=20, transform=axes[i].transAxes, ha='left', va='top')
     
     axes[0].legend()
 
