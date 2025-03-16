@@ -38,6 +38,9 @@ def train_dann(config, use_wandb=True, plots=True):
         test_sim,
         config["batch_size"],
     )
+    
+    # since we will evaluate on stellar and halo mass
+    eval_scaler = dataset.scaler_Y 
 
     # Infer input dimension from data
     sample_X, _, _ = next(iter(train_loader))
@@ -94,6 +97,7 @@ def train_dann(config, use_wandb=True, plots=True):
 
             # Forward pass
             label_pred, domain_pred = model(X_batch)
+            print(label_pred)
 
             # Compute losses
             loss_task = criterion_task(label_pred, y_batch)
@@ -153,14 +157,14 @@ def train_dann(config, use_wandb=True, plots=True):
     
 
 
-def evaluate(model, test_loader, device="cuda"):
+def evaluate(model, test_loader, scaler, device="cuda"):
     model.eval()
     total_mse = 0.0
 
     with torch.no_grad():
         for X_batch, y_batch, _ in test_loader:
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-            label_pred, _ = model(X_batch)
+            label_pred, _ = model(X_batch) 
             total_mse += nn.MSELoss()(label_pred, y_batch).item()
 
     avg_mse = total_mse / len(test_loader)

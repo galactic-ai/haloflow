@@ -17,21 +17,6 @@ class SimulationDataset:
         for sim in self.sims:
             Y_train, X_train = D.hf2_centrals("train", self.obs, sim=sim)
             Y_test, X_test = D.hf2_centrals("test", self.obs, sim=sim)
-
-            # impose mass priors (already in log space)
-
-            mass_range_sm = [10.0, 13.]
-            mass_range_hm = [11.5, 15.]
-            mask_sm = (Y_train[:, 0] > mass_range_sm[0]) & (Y_train[:, 0] < mass_range_sm[1])
-            mask_hm = (Y_train[:, 1] > mass_range_hm[0]) & (Y_train[:, 1] < mass_range_hm[1])
-            Y_train = Y_train[mask_sm & mask_hm]
-            X_train = X_train[mask_sm & mask_hm]
-            
-            mask_sm = (Y_test[:, 0] > mass_range_sm[0]) & (Y_test[:, 0] < mass_range_sm[1])
-            mask_hm = (Y_test[:, 1] > mass_range_hm[0]) & (Y_test[:, 1] < mass_range_hm[1])
-            Y_test = Y_test[mask_sm & mask_hm]
-            X_test = X_test[mask_sm & mask_hm]
-
             data[sim] = {
                 "X_train": X_train,
                 "Y_train": Y_train,
@@ -39,7 +24,7 @@ class SimulationDataset:
                 "Y_test": Y_test,
             }
         return data
-
+    
     def get_train_test_loaders(self, train_sims, test_sim, batch_size=64):
         """Get DataLoaders for training and testing."""
         # Combine training data from specified simulations
@@ -51,6 +36,7 @@ class SimulationDataset:
 
         # shuffle data
         indices = np.arange(len(Y_train))
+        np.random.seed(42)
         np.random.shuffle(indices)
         X_train = X_train[indices]
         Y_train = Y_train[indices]
@@ -62,24 +48,40 @@ class SimulationDataset:
         domain_labels_test = np.full(len(Y_test), len(train_sims))
 
         # Scale data
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
-
+        scaler_X = StandardScaler()
+        X_train_scaled = scaler_X.fit_transform(X_train)
+        X_test_scaled = scaler_X.transform(X_test)
+        
+        # assert
+        assert np.allclose(X_train, scaler_X.inverse_transform(X_train_scaled), atol=1e-5)
+        
+        scaler_Y = StandardScaler()
+        Y_train_scaled = scaler_Y.fit_transform(Y_train)
+        Y_test_scaled = scaler_Y.transform(Y_test)
+        
+        # assert
+        assert np.allclose(Y_train, scaler_Y.inverse_transform(Y_train_scaled), atol=1e-5)
+        
+        # save scaler
+        self.scaler_X = scaler_X
+        self.scaler_Y = scaler_Y
+        
         # Convert to tensors
         X_train_tensor = torch.tensor(X_train_scaled, dtype=torch.float32)
-        Y_train_tensor = torch.tensor(Y_train, dtype=torch.float32)
+        Y_train_tensor = torch.tensor(Y_train_scaled, dtype=torch.float32)
         domain_labels_tensor = torch.tensor(domain_labels, dtype=torch.long)
 
         X_test_tensor = torch.tensor(X_test_scaled, dtype=torch.float32)
-        Y_test_tensor = torch.tensor(Y_test, dtype=torch.float32)
+        Y_test_tensor = torch.tensor(Y_test_scaled, dtype=torch.float32)
         domain_labels_tensor_test = torch.tensor(domain_labels_test, dtype=torch.long)
 
         # Create datasets
         train_dataset = TensorDataset(
             X_train_tensor, Y_train_tensor, domain_labels_tensor
         )
-        test_dataset = TensorDataset(X_test_tensor, Y_test_tensor, domain_labels_tensor_test)
+        test_dataset = TensorDataset(
+            X_test_tensor, Y_test_tensor, domain_labels_tensor_test
+        )
 
         # Create DataLoaders
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)

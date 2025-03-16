@@ -116,5 +116,5 @@ def plot_combined_tsne(embeddings, domains, train_domains=[0, 1, 2, 3], test_dom
 
     plt.legend()
     # plt.title("t-SNE of Feature Space (Train vs Test)")
-#     plt.show()
+    #     plt.show()
     return fig

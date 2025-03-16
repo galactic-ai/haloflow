@@ -10,8 +10,11 @@ from astropy.table import Table
 
 from . import config as C
 
-dat_dir = C.get_dat_dir()
+DAT_DIR = C.get_dat_dir()
 
+MASS_RANGE_SM = [10.0, 13.]
+MASS_RANGE_HM = [11.5, 15.]
+           
 
 def hf2_centrals(dataset, obs, sim='TNG100', version=1): 
     ''' Read Y and X data from subhalos of the haloflow2 simulations.
@@ -23,7 +26,7 @@ def hf2_centrals(dataset, obs, sim='TNG100', version=1):
         obs (str): specify the observables to include 
 
     '''
-    fdata = os.path.join(dat_dir, 'hf2', 'hf2.%s.morph_subhalo.csv' % sim)
+    fdata = os.path.join(DAT_DIR, 'hf2', 'hf2.%s.morph_subhalo.csv' % sim)
     subhalo = Table.read(fdata) 
     
     props = [] 
@@ -48,7 +51,14 @@ def hf2_centrals(dataset, obs, sim='TNG100', version=1):
     not_nan = np.all(np.isfinite(Y), axis=1) & np.all(np.isfinite(X), axis=1) 
     Y = Y[not_nan]
     X = X[not_nan]
-    
+
+    # impose priors on masses (Y)
+    mask_stellar_mass = (Y[:, 0] > MASS_RANGE_SM[0]) & (Y[:, 0] < MASS_RANGE_SM[1])
+    mask_halo_mass = (Y[:, 1] > MASS_RANGE_HM[0]) & (Y[:, 1] < MASS_RANGE_HM[1])
+    mask = mask_stellar_mass & mask_halo_mass
+    Y = Y[mask]
+    X = X[mask]
+
     np.random.seed(42) # random seed to the splits are fixed. 
     isort = np.arange(X.shape[0])  
     np.random.shuffle(isort)
@@ -66,16 +76,16 @@ def get_subhalos(dataset, obs, snapshot=91, version=1):
     ''' see nb/compile_subhalos.ipynb and nb/datasets.ipynb
     '''
     if snapshot != 91: raise NotImplementedError  
-    fdata  = os.path.join(dat_dir, 'subhalos.central.snapshot%i.v%i.%s.hdf5' % (snapshot, version, dataset))
+    fdata  = os.path.join(DAT_DIR, 'subhalos.central.snapshot%i.v%i.%s.hdf5' % (snapshot, version, dataset))
     
     if os.path.isfile(fdata): 
         subhalo   = Table.read(fdata)
     else: 
-        subhalo = Table.read(os.path.join(dat_dir, 'subhalos_morph.hdf5'))
+        subhalo = Table.read(os.path.join(DAT_DIR, 'subhalos_morph.hdf5'))
         subhalo = subhalo[subhalo['snapshot'] == snapshot]
         print('%i subhalos' % len(subhalo))
     
-        central_id = np.load(os.path.join(dat_dir, 'centrals.subfind_id.snapshot%i.npy' % snapshot))
+        central_id = np.load(os.path.join(DAT_DIR, 'centrals.subfind_id.snapshot%i.npy' % snapshot))
 
         is_central = np.array([_id in central_id for _id in subhalo['subhalo_id']])
         subhalo = subhalo[is_central]
@@ -92,8 +102,8 @@ def get_subhalos(dataset, obs, snapshot=91, version=1):
         subhalo_test = subhalo[i_test]
         subhalo_train = subhalo[~i_test]
 
-        ftrain  = os.path.join(dat_dir, 'subhalos.central.snapshot%i.train.hdf5' % snapshot)
-        ftest  = os.path.join(dat_dir, 'subhalos.central.snapshot%i.test.hdf5' % snapshot)
+        ftrain  = os.path.join(DAT_DIR, 'subhalos.central.snapshot%i.train.hdf5' % snapshot)
+        ftest  = os.path.join(DAT_DIR, 'subhalos.central.snapshot%i.test.hdf5' % snapshot)
         subhalo_test.write(ftest) 
         subhalo_train.write(ftrain)
         

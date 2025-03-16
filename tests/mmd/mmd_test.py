@@ -48,7 +48,7 @@ output_dim = 2  # number of classes
 lambda_mmd = 0.1  # weight for MMD loss
 sigma = 1.0  # kernel bandwidth
 lr = 0.0001
-epochs = 100
+epochs = 200
 
 # Initialize models
 feature_extractor = FeatureExtractor(input_dim, hidden_dim)
@@ -111,7 +111,7 @@ for epoch in range(epochs):
 
 
 # Evaluate on test domain
-_, test_loader = sim_dataset.get_train_test_loaders(['Simba100'], 'Simba100')
+_, test_loader = sim_dataset.get_train_test_loaders(['Simba100'], 'TNG100')
 feature_extractor.eval()
 
 total_loss = 0
@@ -150,11 +150,10 @@ print(f"Test MSE Loss: {avg_loss:.4f}")
 predicted_values = np.concatenate(predicted_values, axis=0)
 true_values = np.concatenate(true_values, axis=0)
 features_array = np.concatenate(features_list, axis=0)
-
 # Plot the predicted vs true values for stellar and halo masses
 plt.figure(figsize=(10, 5))
 plt.subplot(1, 2, 1)
-plt.scatter(true_values[:, 0], predicted_values[:, 0], color='blue', alpha=0.5)
+plt.scatter(true_values[:, 0], predicted_values[:, 0], color='blue', alpha=0.5, s=3)
 plt.plot([10, 13], [10, 13], 'k--')
 plt.xlim(10, 13)
 plt.ylim(10, 13)
@@ -163,7 +162,7 @@ plt.ylabel('Predicted Stellar Mass')
 plt.title('Stellar Mass Predictions')
 
 plt.subplot(1, 2, 2)
-plt.scatter(true_values[:, 1], predicted_values[:, 1], color='red', alpha=0.5)
+plt.scatter(true_values[:, 1], predicted_values[:, 1], color='red', alpha=0.5, s=3)
 plt.plot([11, 15], [11, 15], 'k--')
 plt.xlim(11.5, 15)
 plt.ylim(11.5, 15)
@@ -174,59 +173,59 @@ plt.title('Halo Mass Predictions')
 plt.tight_layout()
 plt.show()
 
-# umap
-import umap
-reducer = umap.UMAP()
-embedding = reducer.fit_transform(features_array)
-plt.figure(figsize=(10, 5))
-plt.scatter(embedding[:, 0], embedding[:, 1], c=true_values[:, 0], cmap='viridis', alpha=0.5)
-plt.colorbar(label='True Stellar Mass')
-plt.title('UMAP Embedding of Features')
-plt.show()
+# # umap
+# import umap
+# reducer = umap.UMAP()
+# embedding = reducer.fit_transform(features_array)
+# plt.figure(figsize=(10, 5))
+# plt.scatter(embedding[:, 0], embedding[:, 1], c=true_values[:, 0], cmap='viridis', alpha=0.5)
+# plt.colorbar(label='True Stellar Mass')
+# plt.title('UMAP Embedding of Features')
+# plt.show()
 
-import torch
-import umap
-import matplotlib.pyplot as plt
-import numpy as np
+# import torch
+# import umap
+# import matplotlib.pyplot as plt
+# import numpy as np
 
-# Assuming the feature extractor and data loaders for all domains are defined earlier
+# # Assuming the feature extractor and data loaders for all domains are defined earlier
 
-# Set the model to evaluation mode for feature extraction
-feature_extractor.eval()
+# # Set the model to evaluation mode for feature extraction
+# feature_extractor.eval()
 
-# Initialize lists to hold the features and the domain labels
-features_list = []
-domain_labels = []
+# # Initialize lists to hold the features and the domain labels
+# features_list = []
+# domain_labels = []
 
-# Loop through each domain's loader to get the features
-with torch.no_grad():
-    for domain_name, loader in zip([0, 1, 2], [loader_A, loader_B, loader_C]):
-        for x_data, y_data, _ in loader:
-            # Extract features for the current domain
-            features = feature_extractor(x_data)
+# # Loop through each domain's loader to get the features
+# with torch.no_grad():
+#     for domain_name, loader in zip([0, 1, 2], [loader_A, loader_B, loader_C]):
+#         for x_data, y_data, _ in loader:
+#             # Extract features for the current domain
+#             features = feature_extractor(x_data)
 
-            # Collect features for UMAP
-            features_list.append(features.numpy())
+#             # Collect features for UMAP
+#             features_list.append(features.numpy())
 
-            # Collect domain labels (0 for TNG50, 1 for TNG100, 2 for Eagle100)
-            domain_labels.append(np.full(features.shape[0], domain_name))  # Label by domain
+#             # Collect domain labels (0 for TNG50, 1 for TNG100, 2 for Eagle100)
+#             domain_labels.append(np.full(features.shape[0], domain_name))  # Label by domain
 
-# Convert features and labels to numpy arrays
-features_array = np.concatenate(features_list, axis=0)
-domain_labels = np.concatenate(domain_labels, axis=0)
+# # Convert features and labels to numpy arrays
+# features_array = np.concatenate(features_list, axis=0)
+# domain_labels = np.concatenate(domain_labels, axis=0)
 
-# Apply UMAP for dimensionality reduction (2D)
-reducer = umap.UMAP()
-embedding = reducer.fit_transform(features_array)
+# # Apply UMAP for dimensionality reduction (2D)
+# reducer = umap.UMAP()
+# embedding = reducer.fit_transform(features_array)
 
-# Plot UMAP embedding with domain labels as color
-plt.figure(figsize=(10, 5))
-scatter = plt.scatter(embedding[:, 0], embedding[:, 1], c=domain_labels, cmap='viridis', alpha=0.5)
-plt.colorbar(scatter, label='Domain')
-plt.title('UMAP Embedding of Features (Colored by Domain)')
-plt.xlabel('UMAP Component 1')
-plt.ylabel('UMAP Component 2')
-plt.tight_layout()
-plt.show()
+# # Plot UMAP embedding with domain labels as color
+# plt.figure(figsize=(10, 5))
+# scatter = plt.scatter(embedding[:, 0], embedding[:, 1], c=domain_labels, cmap='viridis', alpha=0.5)
+# plt.colorbar(scatter, label='Domain')
+# plt.title('UMAP Embedding of Features (Colored by Domain)')
+# plt.xlabel('UMAP Component 1')
+# plt.ylabel('UMAP Component 2')
+# plt.tight_layout()
+# plt.show()
 
 

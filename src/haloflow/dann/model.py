@@ -14,6 +14,7 @@ class FeatureExtractor(nn.Module):
             self.layers.extend(
                 [
                     nn.Linear(layers[i], layers[i + 1]),
+                    nn.BatchNorm1d(layers[i + 1]),
                     nn.Dropout(dropout),
                 ]
             )
@@ -29,15 +30,18 @@ class FeatureExtractor(nn.Module):
 
 
 class LabelPredictor(nn.Module):
-    def __init__(self, label_layers=[64, 32], output_dim=2, dropout=0.5):
+    def __init__(self, label_layers=[64, 32], output_dim=2, dropout=0.3):
         super().__init__()
         self.layers = nn.ModuleList()
         for i in range(len(label_layers) - 1):
-            self.layers.extend([
-                nn.Linear(label_layers[i], label_layers[i + 1]),
-                nn.ReLU(),
-                # nn.Dropout(dropout)
-            ])
+            self.layers.extend(
+                [
+                    nn.Linear(label_layers[i], label_layers[i + 1]),
+                    nn.BatchNorm1d(label_layers[i + 1]),
+                    nn.ReLU(),
+                    nn.Dropout(dropout)
+                ]
+            )
         self.output = nn.Linear(label_layers[-1], output_dim)
         self.dropout = dropout
         # Output: [stellar_mass, halo_mass]
@@ -54,11 +58,13 @@ class DomainClassifier(nn.Module):
         self.grl = U.GradientReversalLayer(alpha=alpha)
         self.layers = nn.ModuleList()
         for i in range(len(domain_layers) - 1):
-            self.layers.extend([
-                nn.Linear(domain_layers[i], domain_layers[i + 1]),
-                nn.ReLU(),
-                # nn.Dropout(0.5)
-            ])
+            self.layers.extend(
+                [
+                    nn.Linear(domain_layers[i], domain_layers[i + 1]),
+                    nn.ReLU(),
+                    # nn.Dropout(0.5)
+                ]
+            )
         self.output = nn.Linear(domain_layers[-1], num_domains)
 
     def forward(self, x):
@@ -97,13 +103,13 @@ class DANN(nn.Module):
         domain_pred = self.domain_classifier(features)
         return label_pred, domain_pred
 
-    def build_from_config(cls, config):
-        """Optional: For hyperparameter flexibility"""
-        return cls(
-            input_dim=config["input_dim"],
-            num_domains=config["num_domains"],
-            feature_layers=config["feature_layers"],
-            label_layers=config["label_layers"],
-            domain_layers=config["domain_layers"],
-            alpha=config["alpha"],
-        )
+def build_from_config(cls, config):
+    """Optional: For hyperparameter flexibility"""
+    return cls(
+        input_dim=config["input_dim"],
+        num_domains=config["num_domains"],
+        feature_layers=config["feature_layers"],
+        label_layers=config["label_layers"],
+        domain_layers=config["domain_layers"],
+        alpha=config["alpha"],
+    )
