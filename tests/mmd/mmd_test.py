@@ -23,14 +23,14 @@ class Classifier(nn.Module):
     def __init__(self, output_dim):
         super(Classifier, self).__init__()
         self.fc = nn.Linear(32, 32)
-        self.fc2  = nn.Linear(32, 16)
-        self.fc3 = nn.Linear(16, 8)
+        # self.fc2  = nn.Linear(32, 16)
+        self.fc3 = nn.Linear(32, 8)
         self.fc4 = nn.Linear(8, output_dim)
         self.relu = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
         x = self.relu(self.fc(x))
-        x = self.relu(self.fc2(x))
+        # x = self.relu(self.fc2(x))
         x = self.relu(self.fc3(x))
         x = self.fc4(x)
         return x
