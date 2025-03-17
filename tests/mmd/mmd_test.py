@@ -6,24 +6,34 @@ import numpy as np
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, input_dim, hidden_dim):
+    def __init__(self, input_dim):
         super(FeatureExtractor, self).__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.relu = nn.ReLU(inplace=True)
+        self.fc1 = nn.Linear(input_dim, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 32)
+        self.relu = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = self.relu(self.fc2(x))
+        x = self.fc3(x)
         return x
 
 class Classifier(nn.Module):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, output_dim):
         super(Classifier, self).__init__()
-        self.fc = nn.Linear(input_dim, output_dim)
+        self.fc = nn.Linear(32, 32)
+        self.fc2  = nn.Linear(32, 16)
+        self.fc3 = nn.Linear(16, 8)
+        self.fc4 = nn.Linear(8, output_dim)
+        self.relu = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
-        return self.fc(x)
+        x = self.relu(self.fc(x))
+        x = self.relu(self.fc2(x))
+        x = self.relu(self.fc3(x))
+        x = self.fc4(x)
+        return x
 
 def mmd_loss(x, y, sigma=1.0):
     xx = torch.mm(x, x.t())
@@ -42,22 +52,21 @@ def mmd_loss(x, y, sigma=1.0):
     return loss
 
 # Hyperparameters
-input_dim = 5  # feature dimension of the catalog data
-hidden_dim = 128
+input_dim = 55  # feature dimension of the catalog data
 output_dim = 2  # number of classes
-lambda_mmd = 0.1  # weight for MMD loss
+lambda_mmd = 0.5  # weight for MMD loss
 sigma = 1.0  # kernel bandwidth
 lr = 0.0001
 epochs = 200
 
 # Initialize models
-feature_extractor = FeatureExtractor(input_dim, hidden_dim)
-classifier = Classifier(hidden_dim, output_dim)
-optimizer = optim.Adam(list(feature_extractor.parameters()) + list(classifier.parameters()), lr=lr)
+feature_extractor = FeatureExtractor(input_dim)
+classifier = Classifier(output_dim)
+optimizer = optim.AdamW(list(feature_extractor.parameters()) + list(classifier.parameters()), lr=lr, weight_decay=1e-4)
 
 # Load data: separate loaders for each domain
 from haloflow.dann.data_loader import SimulationDataset
-sim_dataset = SimulationDataset(['TNG50', 'TNG100', 'Eagle100', 'Simba100'], 'mags', '../../data/hf2/')
+sim_dataset = SimulationDataset(['TNG50', 'TNG100', 'Eagle100', 'Simba100'], 'mags_morph_extra', '../../data/hf2/')
 loader_A, _ = sim_dataset.get_train_test_loaders(['TNG50'], 'Simba100')
 loader_B, _ = sim_dataset.get_train_test_loaders(['TNG100'], 'Simba100')
 loader_C, _ = sim_dataset.get_train_test_loaders(['Eagle100'], 'Simba100')
@@ -111,7 +120,8 @@ for epoch in range(epochs):
 
 
 # Evaluate on test domain
-_, test_loader = sim_dataset.get_train_test_loaders(['Simba100'], 'TNG100')
+_, test_loader = sim_dataset.get_train_test_loaders(['TNG100', 'TNG50', 'Eagle100'], 'Simba100')
+scaler = sim_dataset.scaler_Y
 feature_extractor.eval()
 
 total_loss = 0
@@ -121,7 +131,6 @@ predicted_values = []
 true_values = []
 
 features_list = []
-
 
 criterion = nn.MSELoss()  # Since it's a regression task
 
@@ -139,7 +148,11 @@ with torch.no_grad():
         # Calculate loss (Mean Squared Error)
         loss = criterion(outputs, y_test)
         
-        total_loss += loss.item() * x_test.size(0)  # Accumulate the loss weighted by batch size
+        # inverse transform the predicted values
+        predicted_values[-1] = scaler.inverse_transform(predicted_values[-1])
+        true_values[-1] = scaler.inverse_transform(true_values[-1])
+        
+        total_loss += loss.item()
         total_samples += x_test.size(0)  # Accumulate the total number of samples
 
 # Calculate average loss over all samples
@@ -154,6 +167,7 @@ features_array = np.concatenate(features_list, axis=0)
 plt.figure(figsize=(10, 5))
 plt.subplot(1, 2, 1)
 plt.scatter(true_values[:, 0], predicted_values[:, 0], color='blue', alpha=0.5, s=3)
+# plt.plot([np.min(true_values[:, 0]), np.max(true_values[:, 0])], [np.min(true_values[:, 0]), np.max(true_values[:, 0])], 'k--')
 plt.plot([10, 13], [10, 13], 'k--')
 plt.xlim(10, 13)
 plt.ylim(10, 13)
@@ -163,6 +177,7 @@ plt.title('Stellar Mass Predictions')
 
 plt.subplot(1, 2, 2)
 plt.scatter(true_values[:, 1], predicted_values[:, 1], color='red', alpha=0.5, s=3)
+# plt.plot([np.min(true_values[:, 1]), np.max(true_values[:, 1])], [np.min(true_values[:, 1]), np.max(true_values[:, 1])], 'k--')
 plt.plot([11, 15], [11, 15], 'k--')
 plt.xlim(11.5, 15)
 plt.ylim(11.5, 15)
