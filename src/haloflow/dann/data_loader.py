@@ -22,16 +22,18 @@ class SimulationDataset:
                 "Y_train": Y_train,
                 "X_test": X_test,
                 "Y_test": Y_test,
+                "X_all": np.concatenate([X_train, X_test]),
+                "Y_all": np.concatenate([Y_train, Y_test]),
             }
         return data
     
     def get_train_test_loaders(self, train_sims, test_sim, batch_size=64):
         """Get DataLoaders for training and testing."""
         # Combine training data from specified simulations
-        X_train = np.concatenate([self.data[sim]["X_train"] for sim in train_sims])
-        Y_train = np.concatenate([self.data[sim]["Y_train"] for sim in train_sims])
+        X_train = np.concatenate([self.data[sim]["X_all"] for sim in train_sims])
+        Y_train = np.concatenate([self.data[sim]["Y_all"] for sim in train_sims])
         domain_labels = np.concatenate(
-            [[i] * len(self.data[sim]["X_train"]) for i, sim in enumerate(train_sims)]
+            [[i] * len(self.data[sim]["X_all"]) for i, sim in enumerate(train_sims)]
         )
 
         # shuffle data
@@ -43,8 +45,8 @@ class SimulationDataset:
         domain_labels = domain_labels[indices]
 
         # Get test data
-        X_test = self.data[test_sim]["X_test"]
-        Y_test = self.data[test_sim]["Y_test"]
+        X_test = self.data[test_sim]["X_all"]
+        Y_test = self.data[test_sim]["Y_all"]
         domain_labels_test = np.full(len(Y_test), len(train_sims))
 
         # Scale data

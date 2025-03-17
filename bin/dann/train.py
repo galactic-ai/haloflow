@@ -53,7 +53,7 @@ def train_dann(config, use_wandb=True, plots=True):
         label_layers=config["label_layers"],
         domain_layers=config["domain_layers"],
         alpha=0,
-        num_domains=len(config["train_sim"]),
+        num_domains=len(config["train_sim"]) + 1,
     ).to(device)
     
     if use_wandb and wandb is not None:
@@ -97,7 +97,7 @@ def train_dann(config, use_wandb=True, plots=True):
 
             # Forward pass
             label_pred, domain_pred = model(X_batch)
-            print(label_pred)
+            # print(label_pred)
 
             # Compute losses
             loss_task = criterion_task(label_pred, y_batch)
@@ -118,7 +118,7 @@ def train_dann(config, use_wandb=True, plots=True):
         avg_loss = total_loss / len(train_loader)
 
         # Evaluate on test domain (optional)
-        loss_test = evaluate(model, test_loader, device)
+        loss_test = evaluate(model, test_loader, eval_scaler, device)
         domain_acc = E.domain_accuracy(model, train_loader, device)
         # Log to W&B or print locally
         if use_wandb and wandb is not None:

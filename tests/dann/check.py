@@ -5,7 +5,7 @@ from haloflow.config import get_dat_dir
 # %%
 from sklearn.metrics import mean_squared_error, r2_score
 
-def test(model, dataloader):
+def test(model, dataloader, scaler=None):
     model.eval()
     
     # domain acc
@@ -26,6 +26,10 @@ def test(model, dataloader):
             y_true.append(y.cpu().numpy())
             y_pred.append(class_out.cpu().numpy())
             
+            if scaler is not None:
+                y_true[-1] = scaler.inverse_transform(y_true[-1])
+                y_pred[-1] = scaler.inverse_transform(y_pred[-1])
+            
             n_correct += (domain_out.argmax(dim=1) == domain_label).sum().item()
             n_total += len(domain_label)
     
@@ -45,7 +49,7 @@ dat_dir = get_dat_dir()
 
 sim_data = DL.SimulationDataset(
     sims=SIMS,
-    obs="mags",
+    obs="mags_morph_extra",
     data_dir=dat_dir,
 )
 import numpy as np
@@ -55,8 +59,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 train_loader, test_loader = sim_data.get_train_test_loaders(
     train_sims=['Eagle100', 'TNG50', 'TNG100'],
     test_sim='Simba100',
-    batch_size=32,
+    batch_size=64,
 )
+scaler = sim_data.scaler_Y
 
 in_dim = next(iter(train_loader))[0].shape[1]
 
@@ -93,11 +98,11 @@ from haloflow.dann import model as M
 config = {
     "input_dim": in_dim,
     "num_domains": len(SIMS),
-    "feature_layers": [128, 128, 64],
-    "label_layers": [64, 32, 16],
-    "domain_layers": [64, 16],
+    "feature_layers": [256, 128, 64, 32],
+    "label_layers": [32, 32, 8],
+    "domain_layers": [32, 16],
     "alpha": 0,
-    "lr": 1e-2,
+    "lr": 1e-3,
     "es_patience": 5,
     "es_min_delta": 1e-5,
     "num_epochs": 200,
@@ -189,13 +194,13 @@ for epoch in range(config["num_epochs"]):
     print('\n')
     # mse, rmse, r2, acc_s = test(model, train_loader)
     # print(f"Domain Accuracy: {acc_s:}")
-    mse, rmse, r2, acc_t = test(model, test_loader)
+    mse, rmse, r2, acc_t = test(model, test_loader, scaler)
     print(f"MSE: {mse:.4f}, RMSE: {rmse:.4f}, R2: {r2:.4f}")
     # break
     # 
 
 
- # %%
+# %%
 import matplotlib.pyplot as plt
 
 # # Plotting

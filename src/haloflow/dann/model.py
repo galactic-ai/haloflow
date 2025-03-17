@@ -14,15 +14,16 @@ class FeatureExtractor(nn.Module):
             self.layers.extend(
                 [
                     nn.Linear(layers[i], layers[i + 1]),
-                    nn.BatchNorm1d(layers[i + 1]),
+                    # nn.BatchNorm1d(layers[i + 1]),
+                    nn.LayerNorm(layers[i + 1]),
                     nn.Dropout(dropout),
                 ]
             )
-        self.relu = nn.ReLU()
+        self.relu = nn.LeakyReLU(negative_slope=0.2)
 
     def forward(self, x):
         for layer in self.layers:
-            if isinstance(layer, nn.Dropout):
+            if isinstance(layer, nn.Dropout) or isinstance(layer, nn.Linear):
                 x = layer(x)
             else:
                 x = self.relu(layer(x))
@@ -38,7 +39,7 @@ class LabelPredictor(nn.Module):
                 [
                     nn.Linear(label_layers[i], label_layers[i + 1]),
                     nn.BatchNorm1d(label_layers[i + 1]),
-                    nn.ReLU(),
+                    nn.LeakyReLU(negative_slope=0.2),
                     nn.Dropout(dropout)
                 ]
             )
@@ -61,7 +62,7 @@ class DomainClassifier(nn.Module):
             self.layers.extend(
                 [
                     nn.Linear(domain_layers[i], domain_layers[i + 1]),
-                    nn.ReLU(),
+                    nn.LeakyReLU(negative_slope=0.2),
                     # nn.Dropout(0.5)
                 ]
             )
