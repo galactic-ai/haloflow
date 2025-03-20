@@ -1,9 +1,10 @@
 #/bin/python 
 import sys
-from glob import glob
 
-from haloflow.dann.get_preds import get_dann_preds
+from haloflow.dann.model import DANNModel
+from haloflow.dann.evalutate import evaluate
 from haloflow.npe.optuna_training import NPEOptunaTraining
+from haloflow.config import get_dat_dir
 import haloflow.data as D
 
 import torch
@@ -18,16 +19,18 @@ all_sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
 
 if sim not in all_sims: raise ValueError
 
-rem_sims = '_'.join([s for s in all_sims if s != 'Simba100'])
-# fp = f'../../data/hf2/dann/models/dann_model_{rem_sims}_to_{sim}_{obs}_*.pt'
-fp = f'../../data/hf2/dann/models/dann_model_{rem_sims}_to_Simba100_{obs}_*.pt'
-fp = glob(fp)[0]
+MODEL_NAME = f'dann_model_to_{sim}_{obs}'
+FP = get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}.pt'
 
 ##################################################################################
 # read in training data 
 y_test, x_test = D.hf2_centrals('test', obs, sim=sim, version=1)
-label_pred, domain_pred = get_dann_preds(fp, obs, sim)
-x_test = label_pred.detach().numpy()
+
+input_dim = x_test.shape[1]
+model = DANNModel(input_dim=input_dim).to(device)
+model.load_state_dict(torch.load(FP, map_location=device))
+
+y_test, label_pred, _ = evaluate(model, obs, sim, device=device)
 
 # Optuna Parameters
 n_trials    = 1000
@@ -36,13 +39,13 @@ study_name  = 'h2.dann.v1.%s.%s' % (sim, obs)
 output_dir = '../../data/hf2/dann/npe/'
 
 npe = NPEOptunaTraining(
-        y_test, x_test, 
+        y_test, label_pred, 
         n_trials, 
         study_name,
         output_dir,
         n_jobs=8,
         device=device
-)
+        )
 study = npe()
 
-print("  Number of finished trials: %i" % len(study.trials))
+print("Number of finished trials: %i" % len(study.trials))

@@ -1,9 +1,10 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
+import numpy as np
 import torch
+from sklearn.manifold import TSNE
 
 from .. import config as C
+from .evalutate import evaluate
 
 C.setup_plotting_config()
 
@@ -118,3 +119,37 @@ def plot_combined_tsne(embeddings, domains, train_domains=[0, 1, 2, 3], test_dom
     # plt.title("t-SNE of Feature Space (Train vs Test)")
     #     plt.show()
     return fig
+
+
+def plot_evaluation_results(model, obs, sim, device, model_name):
+    y_eval, y_pred, loss = evaluate(model, obs, sim, device)
+    print(f"Test Loss for {sim}: {loss:.4f}")
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6), dpi=150)
+
+    plt.suptitle(f"Predictions for Sims -\> {sim} with {obs} obs")
+
+    ax[0].scatter(y_eval[:, 0], y_pred[:, 0], alpha=0.7, s=5.5)
+    ax[0].plot([10, 12.5], [10, 12.5], "k--")
+    ax[0].set_xlabel("$M_*$")
+    ax[0].set_ylabel("Predicted $M_*$")
+    ax[0].set_xlim(10 - 0.3, 12.5 + 0.3)
+    ax[0].set_ylim(10 - 0.3, 12.5 + 0.3)
+
+    ax[1].scatter(y_eval[:, 1], y_pred[:, 1], alpha=0.7, s=5.5)
+    ax[1].plot([11.5, 15], [11.5, 15], "k--")
+    ax[1].set_xlabel("$M_h$")
+    ax[1].set_ylabel("Predicted $M_h$")
+    ax[1].set_xlim(11.5 - 0.3, 15 + 0.3)
+    ax[1].set_ylim(11.5 - 0.3, 15 + 0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"../../plots/{model_name}_predictions.png")
+
+    with open(f"../../plots/{model_name}_mse_results.txt", "w") as f:
+        f.write(
+            f"MSE for stellar mass: {np.mean((y_eval[:, 0] - y_pred[:, 0]) ** 2):.4f}\n"
+        )
+        f.write(
+            f"MSE for halo mass: {np.mean((y_eval[:, 1] - y_pred[:, 1]) ** 2):.4f}\n"
+        )

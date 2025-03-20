@@ -43,3 +43,14 @@ def read_best_ndes(study_name, n_ensemble=5, device='cpu', dat_dir='/scratch/gpf
         qphis.append(qphi)
 
     return qphis
+
+def get_all_data_from_loader(dataloader):
+    all_X, all_Y = [], []
+    for batch in dataloader:
+        X_batch, Y_batch, _ = batch
+        all_X.append(X_batch)
+        all_Y.append(Y_batch)
+
+    all_X = torch.cat(all_X, dim=0)
+    all_Y = torch.cat(all_Y, dim=0)
+    return all_X, all_Y

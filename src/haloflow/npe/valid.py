@@ -4,8 +4,6 @@ import numpy as np
 import torch
 from tarp import get_tarp_coverage
 
-from haloflow.dann.get_preds import get_dann_preds
-
 def validate_npe(train_obs, train_sim, 
                 test_obs, test_sim, 
                 device='cpu',
@@ -23,31 +21,44 @@ def validate_npe(train_obs, train_sim,
     NDEs on the test set.
     """
 
-    # Load NDEs
-    if with_dann:
-        qphis = U.read_best_ndes(
-            f'h2.dann.v{version}.{train_sim}.{train_obs}',
-            n_ensemble=n_ensemble, device=device,
-            dat_dir=data_dir, verbose=True)
-    else:
-        qphis = U.read_best_ndes(
-            f'h2.v{version}.{train_sim}.{train_obs}',
-            n_ensemble=n_ensemble, device=device,
-            dat_dir=data_dir, verbose=True)
-
     # Load test data
     Y_test, X_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
 
     if with_dann:
         if fp is None:
-            import glob
-            all_sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
-            rem_sims = '_'.join([s for s in all_sims if s != 'Simba100'])
-            fp = f'../../data/hf2/dann/models/dann_model_{rem_sims}_to_Simba100_{test_obs}_*.pt'
-            fp = glob.glob(fp)[0]
+            # TODO: Need to fix file path to match the new structure
+            fp = f'../../data/hf2/dann/models/dann_model_to_Simba100_{test_obs}_*.pt'
         
-        label_pred, _ = get_dann_preds(fp, test_obs, test_sim)
-        X_test = label_pred.detach().numpy()
+        if 'dann' in fp:
+            from haloflow.dann.evalutate import evaluate
+            from haloflow.dann.model import DANNModel
+            
+            model = DANNModel(input_dim=X_test.shape[1])
+            model.load_state_dict(torch.load(fp, map_location=device))
+
+            Y_test, X_test, _ = evaluate(model, test_obs, test_sim, device=device)
+        elif 'mmd' in fp:
+            from haloflow.mmd.get_preds import get_mmd_preds
+
+            _, X_test = get_mmd_preds(fp, test_obs, test_sim)
+
+    # Load NDEs
+    if with_dann:
+        if 'dann' in fp:
+            qphis = U.read_best_ndes(
+                f'h2.dann.v{version}.{train_sim}.{train_obs}',
+                n_ensemble=n_ensemble, device=device,
+                dat_dir=data_dir, verbose=True)
+        elif 'mmd' in fp:
+            qphis = U.read_best_ndes(
+                f'h2.mmd.v{version}.{train_sim}.{train_obs}',
+                n_ensemble=n_ensemble, device=device,
+                dat_dir=data_dir, verbose=True)
+    else:
+        qphis = U.read_best_ndes(
+            f'h2.v{version}.{train_sim}.{train_obs}',
+            n_ensemble=n_ensemble, device=device,
+            dat_dir=data_dir, verbose=True)
 
     # Select subset if needed
     if train_samples is not None:

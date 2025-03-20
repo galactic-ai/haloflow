@@ -1,6 +1,30 @@
+import haloflow.data as D
 import numpy as np
 import torch
+import torch.nn as nn
 from sklearn.metrics import mean_squared_error, r2_score
+
+
+def evaluate(model, obs, sim, device="cpu"):
+    """Evaluate the model on the test set."""
+    # Load the test data
+    y_eval, X_eval = D.hf2_centrals("test", obs=obs, sim=sim)
+    X_eval = (X_eval - np.mean(X_eval, axis=0)) / np.std(X_eval, axis=0)
+    X_eval_tensor = torch.tensor(X_eval, dtype=torch.float32).to(device)
+
+    # Evaluate the model
+    model.eval()
+    with torch.no_grad():
+        y_pred_tensor, _ = model(X_eval_tensor, 0)
+
+    criterion = nn.MSELoss()
+    y_eval_tensor = torch.tensor(y_eval, dtype=torch.float32).to(device)
+    loss = criterion(y_pred_tensor, y_eval_tensor).item()
+
+    y_pred = y_pred_tensor.cpu().numpy()
+    y_eval = y_eval_tensor.cpu().numpy()
+
+    return y_eval, y_pred, loss
 
 
 def evaluate_regression(model, dataloader, device="cuda"):

@@ -1,227 +1,247 @@
 # %%
-from haloflow.dann import data_loader as DL
-from haloflow.config import get_dat_dir
-
-# %%
-from sklearn.metrics import mean_squared_error, r2_score
-
-def test(model, dataloader, scaler=None):
-    model.eval()
-    
-    # domain acc
-    n_total = 0
-    n_correct = 0
-    
-    y_true = []
-    y_pred = []
-    
-    with torch.no_grad():
-        for X, y, domain_label in dataloader:
-            X = X.to('cpu')
-            y = y.to('cpu')
-            domain_label = domain_label.to('cpu')
-            
-            class_out, domain_out = model(X)
-            
-            y_true.append(y.cpu().numpy())
-            y_pred.append(class_out.cpu().numpy())
-            
-            if scaler is not None:
-                y_true[-1] = scaler.inverse_transform(y_true[-1])
-                y_pred[-1] = scaler.inverse_transform(y_pred[-1])
-            
-            n_correct += (domain_out.argmax(dim=1) == domain_label).sum().item()
-            n_total += len(domain_label)
-    
-    y_true, y_pred = np.concatenate(y_true), np.concatenate(y_pred)
-            
-    mse = mean_squared_error(y_true, y_pred)
-    rmse = np.sqrt(mse)
-    r2 = r2_score(y_true, y_pred)
-    
-    domain_acc = n_correct / n_total
-    
-    return mse, rmse, r2, domain_acc
-
-# %%
-SIMS = ["Eagle100", "Simba100", "TNG100", "TNG50"]
-dat_dir = get_dat_dir()
-
-sim_data = DL.SimulationDataset(
-    sims=SIMS,
-    obs="mags_morph_extra",
-    data_dir=dat_dir,
-)
 import numpy as np
-import torch
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# %%
-train_loader, test_loader = sim_data.get_train_test_loaders(
-    train_sims=['Eagle100', 'TNG50', 'TNG100'],
-    test_sim='Simba100',
-    batch_size=64,
-)
-scaler = sim_data.scaler_Y
 
-in_dim = next(iter(train_loader))[0].shape[1]
-
-from collections import Counter
-
-train_labels = []
-test_labels = []
-
-for _, _, train_label in train_loader:
-    train_labels.append(train_label.cpu().numpy())
-
-for _, _, test_label in test_loader:
-    test_labels.append(test_label.cpu().numpy())
-
-train_labels = np.concatenate(train_labels)
-test_labels = np.concatenate(test_labels)
-
-c_train = Counter(train_labels)
-c_test = Counter(test_labels)
-
-total_count = sum(c_train.values()) + sum(c_test.values())
-weights = [c_train[i] / total_count for i in range(len(c_train))]
-# append test
-weights.append(c_test[3]/total_count)
-weights = torch.tensor(weights, dtype=torch.float32).to(device)
-weights
-
-# So right now we have the training as Eagle100, TNG50, TNG100 
-# and the testing as Simba100
+from haloflow import data as D
 
 # %%
-from haloflow.dann import model as M
-
-config = {
-    "input_dim": in_dim,
-    "num_domains": len(SIMS),
-    "feature_layers": [256, 128, 64, 32],
-    "label_layers": [32, 32, 8],
-    "domain_layers": [32, 16],
-    "alpha": 0,
-    "lr": 1e-3,
-    "es_patience": 5,
-    "es_min_delta": 1e-5,
-    "num_epochs": 200,
-}
-
-
-model = M.build_from_config(M.DANN, config)
-model
+obs = 'mags_morph_extra'
+sim = 'TNG50'
+all_sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
 
 # %%
-import sys
+y, X, domains = [], [], []
 
+# %%
+for i, s in enumerate(all_sims):
+    if s == sim:
+        continue
+    y_t, X_t = D.hf2_centrals("train", obs=obs, sim=s)
+
+    domains.append(np.full(y_t.shape[0], i))
+    y.append(y_t)
+    X.append(X_t)
+
+y = np.concatenate(y)
+X = np.concatenate(X)
+domains = np.concatenate(domains)
+
+# %%
+# standardize the data
+X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
+
+# %%
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+# %%
+from torch.autograd import Function
+
+
+class ReverseLayerF(Function):
+
+    @staticmethod
+    def forward(ctx, x, alpha):
+        ctx.alpha = alpha
+
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        output = grad_output.neg() * ctx.alpha
+
+        return output, None
+
+
+
+# %%
+class DANNModel(nn.Module):
+    def __init__(self, input_dim):
+        super(DANNModel, self).__init__()
+        self.feature = nn.Sequential()
+        # self.feature.add_module('input', nn.Linear(input_dim, 512))
+        # self.feature.add_module('silu_input', nn.SiLU())
+        self.feature.add_module('fc0', nn.Linear(input_dim, 256))
+        self.feature.add_module('silu0', nn.SiLU())
+        self.feature.add_module('fc1', nn.Linear(256, 128))
+        self.feature.add_module('silu1', nn.SiLU())
+        self.feature.add_module('fc2', nn.Linear(128, 64))
+        self.feature.add_module('silu2', nn.SiLU())
+        self.feature.add_module('fc3', nn.Linear(64, 32))
+        self.feature.add_module('silu3', nn.SiLU())
+
+
+        # class classifier
+        self.class_classifier = nn.Sequential()
+        self.class_classifier.add_module('c_fc1', nn.Linear(32, 16))
+        self.class_classifier.add_module('c_silu1', nn.SiLU())
+        self.class_classifier.add_module('c_fc2', nn.Linear(16, 8))
+        self.class_classifier.add_module('c_silu2', nn.SiLU())
+        self.class_classifier.add_module('c_fc3', nn.Linear(8, 2)) # sm and hm
+
+        # domain classifier
+        self.domain_classifier = nn.Sequential()
+        self.domain_classifier.add_module('d_fc1', nn.Linear(32, 16))
+        self.domain_classifier.add_module('d_silu1', nn.SiLU())
+        self.domain_classifier.add_module('d_fc2', nn.Linear(16, 8))
+        self.domain_classifier.add_module('d_silu2', nn.SiLU())
+        self.domain_classifier.add_module('d_fc3', nn.Linear(8, 4)) # 4 domains
+        
+
+    def forward(self, x, alpha):
+        x = self.feature(x)
+        x_rev = ReverseLayerF.apply(x, alpha)
+        label = self.class_classifier(x)
+        domain = self.domain_classifier(x_rev)
+        return label, domain
+
+# %%
+def evaluate(model, obs, sim, device='cpu'):
+    """Evaluate the model on the test set."""
+    # Load the test data
+    y_eval, X_eval = D.hf2_centrals("test", obs=obs, sim=sim)
+    X_eval = (X_eval - np.mean(X_eval, axis=0)) / np.std(X_eval, axis=0)
+    X_eval_tensor = torch.tensor(X_eval, dtype=torch.float32).to(device)
+
+    # Evaluate the model
+    model.eval()
+    with torch.no_grad():
+        y_pred_tensor, _ = model(X_eval_tensor, 0)
+
+    criterion = nn.MSELoss()
+    y_eval_tensor = torch.tensor(y_eval, dtype=torch.float32).to(device)
+    loss = criterion(y_pred_tensor, y_eval_tensor).item()
+    
+    y_pred = y_pred_tensor.cpu().numpy()
+    y_eval = y_eval_tensor.cpu().numpy()
+
+    return y_eval, y_pred, loss
+
+# %%
+device = torch.device("cuda" if torch.cuda.is_available() else "mps")
+
+# %%
+# Create the model
+input_dim = X.shape[1]
+lr = 1e-2
+num_epochs = 1000
+
+model = DANNModel(input_dim).to(device)
+
+# Define the loss function and optimizer
+criterion = nn.MSELoss()
+domain_criterion = nn.CrossEntropyLoss()
+
+# Use AdamW optimizer with a learning rate scheduler
+optimizer = optim.AdamW(model.parameters(), lr=1e-2, weight_decay=1e-5)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=45, verbose=True)
+
+# Convert data to PyTorch tensors
+X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
+y_tensor = torch.tensor(y, dtype=torch.float32).to(device)
+domains_tensor = torch.tensor(domains, dtype=torch.long).to(device)
+
+# early stopping parameters
+best_loss = float('inf')
+patience = 50
+counter = 0
+
+# %%
+losses = []
+
+# %%
+# p = float(epoch) / num_epochs
+# alpha = 2. / (1. + np.exp(-10 * p)) - 1
+import matplotlib.pyplot as plt
 import numpy as np
 
-from haloflow.dann import utils as U
+p = np.linspace(0, 1, num_epochs)
+alpha = 2. / (1. + np.exp(-4.5 * p)) - 1
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Loss functions
-criterion_task = nn.MSELoss()  # For stellar/halo mass prediction (regression)
-criterion_domain = nn.CrossEntropyLoss(weight=weights)  # For domain classification
-
-# Optimizer
-optimizer = optim.Adam(model.parameters(), lr=config["lr"], weight_decay=1e-4)
-
-# Early stopping
-early_stopper = U.EarlyStopper(
-    patience=config["es_patience"],
-    min_delta=config["es_min_delta"],
-)
-
-# Scheduler
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode="min", factor=0.1, patience=3, verbose=True
-)
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(range(num_epochs), alpha, label='Alpha schedule', color='blue')
 
 # %%
-best_accu_t = 0.0 # accuracy on target set
-for epoch in range(config["num_epochs"]):
+for epoch in range(num_epochs):
     model.train()
-    
-    len_dataloader = min(len(train_loader), len(test_loader))
-    data_source_iter = iter(train_loader)
-    data_target_iter = iter(test_loader)
-    
-    for i in range(len_dataloader):
-        p = float(i + epoch * len_dataloader) / config["num_epochs"] / len_dataloader
-        alpha = 2. / (1. + np.exp(-10 * p)) - 1.
-        
-        # model training on source
-        data_source = next(data_source_iter)
-        X, y, label = data_source
-        
-        model.zero_grad()
-        batch_size = len(label)
-        
-        model.domain_classifier.grl.update_alpha(alpha)
-        label_pred, domain_pred = model(X)
-        
-        err_s_task = criterion_task(label_pred, y)
-        err_s_domain = criterion_domain(domain_pred, label)
-        
-        # model training on target
-        data_target = next(data_target_iter)
-        t_X, t_y, t_label = data_target
-        
-        batch_size = len(t_label)
-        
-        _, t_domain_pred = model(t_X)
-        
-        err_t_domain = criterion_domain(t_domain_pred, t_label)
-        
-        err = err_s_task + err_s_domain + err_t_domain
-        
-        err.backward()
-        optimizer.step()
-        scheduler.step(epoch)
-        
-        # print epoch, iteration, err_s_label, err_s_domain, err_t_domain, err
-        sys.stdout.write(
-            f"\rEpoch {epoch+1}/{config['num_epochs']}, Batch {i+1}/{len_dataloader}, Loss: {err.item():.4f}, Source Task: {err_s_task.item():.4f}, Source Domain: {err_s_domain.item():.4f}, Target Domain: {err_t_domain.item():.4f}"
-        )
-        sys.stdout.flush()
-        # save ..
-    
-    print('\n')
-    # mse, rmse, r2, acc_s = test(model, train_loader)
-    # print(f"Domain Accuracy: {acc_s:}")
-    mse, rmse, r2, acc_t = test(model, test_loader, scaler)
-    print(f"MSE: {mse:.4f}, RMSE: {rmse:.4f}, R2: {r2:.4f}")
-    # break
-    # 
 
+    #p = float(i + epoch * len_dataloader) / n_epoch / len_dataloader
+    # alpha = 2. / (1. + np.exp(-10 * p)) - 1
+
+    p = float(epoch) / num_epochs
+    alpha = 2. / (1. + np.exp(-4.5 * p)) - 1
+    
+    # Zero the gradients
+    optimizer.zero_grad()
+
+    # Forward pass
+    outputs, domains = model(X_tensor, alpha)
+    reg_loss = criterion(outputs, y_tensor) # regression loss
+    domain_loss = domain_criterion(domains, domains_tensor) # domain classification loss
+
+    # evalution
+    _, _, eval_loss = evaluate(model, obs, sim, device=device)  # evaluation loss
+
+    loss = reg_loss + domain_loss + eval_loss  # total loss
+
+
+    # Backward pass and optimization
+    loss.backward()
+    optimizer.step()
+
+    # Step the learning rate scheduler
+    scheduler.step(eval_loss)
+
+    losses.append(loss.item())
+
+    if (epoch + 1) % 100 == 0:
+        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}, Reg Loss: {reg_loss.item():.4f}, Domain Loss: {domain_loss.item():.4f}, Eval Reg Loss: {eval_loss:.4f}, Alpha: {alpha:.4f}')
+
+    # Early stopping
+    if eval_loss < best_loss:
+        best_loss = eval_loss
+        counter = 0
+        
+        # Save the model checkpoint
+        torch.save(model.state_dict(), f'dann_model_to_{sim}_{obs}.pth')
+    else:
+        counter += 1
+    
+    if counter >= patience:
+        print(f'Early stopping at epoch {epoch + 1}')
+        break
 
 # %%
-import matplotlib.pyplot as plt
+# Plot the training loss
+plt.figure(figsize=(10, 5))
+plt.plot(losses, label='Training Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
 
-# # Plotting
-# plt.figure(figsize=(10, 6))
-# plt.scatter(y[:, 0], label_pred[:, 0].detach().numpy())
-# plt.show()
-model.eval()
+# %%
+y_eval, y_pred, loss = evaluate(model, obs, 'TNG100', device)
+print(f'Test Loss for {sim}: {loss:.4f}')
 
-sample_X, _, _ = next(iter(test_loader))
+# %%
+fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+ax[0].scatter(y_eval[:, 0], y_pred[:, 0], alpha=0.7, s=5.5)
+ax[0].plot([10, 12.5], [10, 12.5], 'k--')
+ax[0].set_xlabel('$M_*$')
+ax[0].set_ylabel('Predicted $M_*$')
+ax[0].set_xlim(10-0.3, 12.5+0.3)
+ax[0].set_ylim(10-0.3, 12.5+0.3)
 
-from haloflow.dann import get_preds
-all_X, all_y = get_preds.get_all_data_from_loader(test_loader)
+ax[1].scatter(y_eval[:, 1], y_pred[:, 1], alpha=0.7, s=5.5)
+ax[1].plot([11.5, 15], [11.5, 15], 'k--')
+ax[1].set_xlabel('$M_h$')
+ax[1].set_ylabel('Predicted $M_h$')
+ax[1].set_xlim(11.5-0.3, 15+0.3)
+ax[1].set_ylim(11.5-0.3, 15+0.3)
 
-label_pred, _ = model(all_X)
-scaler = sim_data.scaler_Y
-all_y_pred = scaler.inverse_transform(label_pred.detach().numpy())
-all_y_inv = scaler.inverse_transform(all_y.detach().numpy())
+print(f"MSE for stellar mass: {np.mean((y_eval[:, 0] - y_pred[:, 0])**2):.4f}")
+print(f"MSE for halo mass: {np.mean((y_eval[:, 1] - y_pred[:, 1])**2):.4f}")
 
-plt.figure(figsize=(10, 6))
-plt.scatter(all_y_inv[:, 0], all_y_pred[:, 0])
-plt.plot([10, 13], [10, 13], color='red', linestyle='--')
-plt.xlim(10, 13)
-plt.ylim(10, 13)
-plt.show()
+# %%
+
+
+

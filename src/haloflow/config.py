@@ -11,10 +11,6 @@ def get_dat_dir():
             return '/xdisk/chhahn/chhahn/haloflow/'
     except KeyError:
         return '../../data/'
-    # else: 
-        # raise ValueError
-        # return '../../data/'
-
 
 def setup_plotting_config():
     mpl.rcParams['text.usetex'] = True

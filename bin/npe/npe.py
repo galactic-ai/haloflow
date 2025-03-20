@@ -3,6 +3,7 @@ import sys
 
 from haloflow.npe.optuna_training import NPEOptunaTraining
 import haloflow.data as D
+import haloflow.config as C
 
 import torch
 
@@ -23,7 +24,7 @@ y_train, x_train = D.hf2_centrals('train', obs, sim=sim, version=1)
 n_trials    = 1000
 study_name  = 'h2.v1.%s.%s' % (sim, obs) 
 
-output_dir = '/xdisk/chhahn/chhahn/haloflow/hf2/npe'
+output_dir = C.get_dat_dir() + 'hf2/npe'
 
 npe = NPEOptunaTraining(
         y_train, x_train, 
