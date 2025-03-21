@@ -3,13 +3,15 @@ import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.metrics import mean_squared_error, r2_score
+from .model import weighted_huber_loss
 
 
-def evaluate(model, obs, sim, device="cpu"):
+def evaluate(model, obs, sim, mean_=0, std_=1, device='cpu', dataset='test'):
     """Evaluate the model on the test set."""
     # Load the test data
-    y_eval, X_eval = D.hf2_centrals("test", obs=obs, sim=sim)
-    X_eval = (X_eval - np.mean(X_eval, axis=0)) / np.std(X_eval, axis=0)
+    y_eval, X_eval = D.hf2_centrals(dataset, obs=obs, sim=sim)
+
+    X_eval = (X_eval - mean_) / std_
     X_eval_tensor = torch.tensor(X_eval, dtype=torch.float32).to(device)
 
     # Evaluate the model
@@ -17,14 +19,18 @@ def evaluate(model, obs, sim, device="cpu"):
     with torch.no_grad():
         y_pred_tensor, _ = model(X_eval_tensor, 0)
 
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    # use huber loss for regression
+    criterion = nn.HuberLoss()
     y_eval_tensor = torch.tensor(y_eval, dtype=torch.float32).to(device)
     loss = criterion(y_pred_tensor, y_eval_tensor).item()
-
+    
     y_pred = y_pred_tensor.cpu().numpy()
     y_eval = y_eval_tensor.cpu().numpy()
+    
+    r2 = 1 - np.sum((y_eval - y_pred)**2) / np.sum((y_eval - np.mean(y_eval))**2)
 
-    return y_eval, y_pred, loss
+    return y_eval, y_pred, loss, r2
 
 
 def evaluate_regression(model, dataloader, device="cuda"):

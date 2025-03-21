@@ -6,14 +6,20 @@ import torch.nn as nn
 
 from . import utils as U
 
+def weighted_huber_loss(y_true, y_pred, delta=1.0):
+    criterion = nn.HuberLoss(delta=delta, reduction='mean')
+    loss = criterion(y_pred, y_true)
+    weights = 1.0 + (y_true - y_true.min()) / (y_true.max() - y_true.min())  
+    return (loss * weights).mean()
+
 
 class DANNModel(nn.Module):
     def __init__(self, input_dim):
         super(DANNModel, self).__init__()
         self.feature = nn.Sequential()
-        self.feature.add_module("fc0", nn.Linear(input_dim, 256))
-        self.feature.add_module("silu0", nn.SiLU())
-        self.feature.add_module("fc1", nn.Linear(256, 128))
+        # self.feature.add_module("fc0", nn.Linear(input_dim, 256))
+        # self.feature.add_module("silu0", nn.SiLU())
+        self.feature.add_module("fc1", nn.Linear(input_dim, 128))
         self.feature.add_module("silu1", nn.SiLU())
         self.feature.add_module("fc2", nn.Linear(128, 64))
         self.feature.add_module("silu2", nn.SiLU())

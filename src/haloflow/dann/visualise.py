@@ -10,7 +10,7 @@ C.setup_plotting_config()
 
 
 def visualize_features_fast(
-    model, train_loader, test_loader, n_samples=2000, test_domain_label=4, device="cuda"
+    model, train_loader, test_loader, n_samples=2000, device="cuda"
 ):
     """
     Visualize features using t-SNE. This function is optimized for speed.
@@ -43,20 +43,18 @@ def visualize_features_fast(
     # Process training data
     with torch.no_grad():
         for X_batch, _, domain_batch in train_loader:
-            X_batch = X_batch.to(device)
-            feats = model.feature_extractor(X_batch).cpu().numpy()
+            X_batch = X_batch.to(device).float()
+            feats = model.feature(X_batch).cpu().numpy()
             features.append(feats)
             domains.append(domain_batch.cpu().numpy())
 
     # Process test data (assign domain=4)
     with torch.no_grad():
-        for X_batch, _, _ in test_loader:
-            X_batch = X_batch.to(device)
-            feats = model.feature_extractor(X_batch).cpu().numpy()
+        for X_batch, _, domain_batch in test_loader:
+            X_batch = X_batch.to(device).float()
+            feats = model.feature(X_batch).cpu().numpy()
             features.append(feats)
-            domains.append(
-                np.full(feats.shape[0], test_domain_label)
-            )  # Test domain label=4
+            domains.append(domain_batch.cpu().numpy())
 
     features = np.concatenate(features)
     domains = np.concatenate(domains)
@@ -121,8 +119,8 @@ def plot_combined_tsne(embeddings, domains, train_domains=[0, 1, 2, 3], test_dom
     return fig
 
 
-def plot_evaluation_results(model, obs, sim, device, model_name):
-    y_eval, y_pred, loss = evaluate(model, obs, sim, device)
+def plot_evaluation_results(model, obs, sim, device, model_name, mean_, std_):
+    y_eval, y_pred, loss, _ = evaluate(model, obs, sim, device=device, mean_=mean_, std_=std_)
     print(f"Test Loss for {sim}: {loss:.4f}")
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 6), dpi=150)
@@ -131,15 +129,15 @@ def plot_evaluation_results(model, obs, sim, device, model_name):
 
     ax[0].scatter(y_eval[:, 0], y_pred[:, 0], alpha=0.7, s=5.5)
     ax[0].plot([10, 12.5], [10, 12.5], "k--")
-    ax[0].set_xlabel("$M_*$")
-    ax[0].set_ylabel("Predicted $M_*$")
+    ax[0].set_xlabel("$M_*$", fontsize='x-large')
+    ax[0].set_ylabel("Predicted $M_*$", fontsize='x-large')
     ax[0].set_xlim(10 - 0.3, 12.5 + 0.3)
     ax[0].set_ylim(10 - 0.3, 12.5 + 0.3)
 
     ax[1].scatter(y_eval[:, 1], y_pred[:, 1], alpha=0.7, s=5.5)
     ax[1].plot([11.5, 15], [11.5, 15], "k--")
-    ax[1].set_xlabel("$M_h$")
-    ax[1].set_ylabel("Predicted $M_h$")
+    ax[1].set_xlabel("$M_h$", fontsize='x-large')
+    ax[1].set_ylabel("Predicted $M_h$", fontsize='x-large')
     ax[1].set_xlim(11.5 - 0.3, 15 + 0.3)
     ax[1].set_ylim(11.5 - 0.3, 15 + 0.3)
 

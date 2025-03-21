@@ -35,8 +35,14 @@ def validate_npe(train_obs, train_sim,
             
             model = DANNModel(input_dim=X_test.shape[1])
             model.load_state_dict(torch.load(fp, map_location=device))
+            
+            # remove .pt and add _mean_std.npz
+            fp = fp.replace('.pt', '_mean_std.npz')
+            array = np.load(fp)
+            mean = array['mean']
+            std = array['std']
 
-            Y_test, X_test, _ = evaluate(model, test_obs, test_sim, device=device)
+            Y_test, X_test, _, _ = evaluate(model, test_obs, test_sim, device=device, mean_=mean, std_=std)
         elif 'mmd' in fp:
             from haloflow.mmd.get_preds import get_mmd_preds
 
