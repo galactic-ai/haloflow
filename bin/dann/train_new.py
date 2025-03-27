@@ -7,9 +7,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import haloflow.data as D
+from haloflow.schechter import schechter_logmass
 from haloflow.config import get_dat_dir
 from haloflow.dann.evalutate import evaluate
-from haloflow.dann.model import DANNModel
+from haloflow.dann.model import DANNModel, weighted_mse_loss
 from haloflow.dann.visualise import plot_evaluation_results
 
 # %%
@@ -36,7 +37,7 @@ MODEL_NAME = f'dann_model_to_{sim}_{obs}'
 FP = get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}.pt'
 
 # %%
-y, X, domains = [], [], []
+y, X, domains, counts = [], [], [], []
 
 # %%
 for i, s in enumerate(all_sims):
@@ -47,19 +48,36 @@ for i, s in enumerate(all_sims):
     domains.append(np.full(y_t.shape[0], i))
     y.append(y_t)
     X.append(X_t)
+    counts.append(np.full(y_t.shape[0], y_t.shape[0]))
 
 y = np.concatenate(y)
 X = np.concatenate(X)
 domains = np.concatenate(domains)
+counts = np.concatenate(counts)
+
+count_weights = counts / np.unique(counts).sum() 
+sche_weights = schechter_logmass(y[:, 0])
+# print(sche_weights)
+# print(min(sche_weights), max(sche_weights))
+# print(np.log10(sche_weights))
+# input()
+
+weights = -np.log10(count_weights * sche_weights) + 1e-8
+print(f"Min weight: {min(weights)}")
+print(f"Max weight: {max(weights)}")
+# weights = count_weights
+# min_weight = min(weights)
+# max_weight = max(weights)
+# if max_weight > min_weight:
+#     weights = (weights - min_weight) / (max_weight - min_weight)
+# else:
+#     weights = np.ones_like(weights)
+
 
 # standardize the data
 mean_ = np.mean(X, axis=0)
 std_ = np.std(X, axis=0)
-print(f'Mean: {mean_}, Std: {std_}')
 X = (X - mean_) / std_
-print('New mean and std after standardization:', np.mean(X, axis=0), np.std(X, axis=0))
-print(y.min(), y.max(), y.shape)
-
 
 # save mean and std
 np.savez(get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}_mean_std.npz', mean=mean_, std=std_)
@@ -73,12 +91,13 @@ num_epochs = 1000
 model = DANNModel(input_dim).to(device)
 
 # Define the loss function and optimizer
-criterion = nn.HuberLoss()
+criterion = weighted_mse_loss
+# criterion = nn.MSELoss()
 domain_criterion = nn.CrossEntropyLoss()
 
 # Use AdamW optimizer with a learning rate scheduler
-optimizer = optim.AdamW(model.parameters(), lr=5e-3, weight_decay=1e-5)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=45, verbose=True)
+optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=45)
 
 # clip gradients
 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -87,6 +106,10 @@ torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
 y_tensor = torch.tensor(y, dtype=torch.float32).to(device)
 domains_tensor = torch.tensor(domains, dtype=torch.long).to(device)
+
+# weights
+weights = torch.tensor(weights, dtype=torch.float32).to(device)
+weights = weights.unsqueeze(1).expand(-1, 2)
 
 # early stopping parameters
 best_loss = float('inf')
@@ -113,11 +136,12 @@ for epoch in range(num_epochs):
 
     # Forward pass
     outputs, domains = model(X_tensor, alpha)
-    reg_loss = criterion(outputs, y_tensor) # regression loss
+    reg_loss = criterion(y_tensor, outputs, weights) # regression loss
+    # reg_loss = criterion(y_tensor, outputs) # regression loss
     domain_loss = domain_criterion(domains, domains_tensor) # domain classification loss
 
     # evalution
-    _, _, eval_loss, r2 = evaluate(model, obs, sim, device=device, mean_=mean_, std_=std_)  # evaluation loss
+    _, _, eval_loss, r2 = evaluate(model, obs, sim, device=device, mean_=mean_, std_=std_, weights=None)  # evaluation loss
 
     loss = reg_loss + domain_loss + eval_loss  # total loss
 
@@ -155,19 +179,19 @@ plt.figure(figsize=(10, 5), dpi=150)
 plt.plot(losses, label='Training Loss')
 plt.plot(eval_losses, label='Evaluation Loss', linestyle='--')
 plt.plot(total_losses, label='Total Loss', linestyle=':')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
+plt.xlabel('Epoch', fontsize='x-large')
+plt.ylabel('Loss', fontsize='x-large')
 plt.ylim(0, max(losses) * 1.1)
 plt.xlim(0, len(losses))
-plt.title('Training Loss over Epochs', fontsize='x-large')
 plt.legend()
 plt.grid()
+plt.tight_layout()
 plt.savefig(f'../../plots/{MODEL_NAME}_training_loss.png')
 plt.clf()
 
 # %%
 # Call the function to plot evaluation results
-plot_evaluation_results(model, obs, sim, device, MODEL_NAME, mean_, std_)
+plot_evaluation_results(model, obs, sim, device, MODEL_NAME, mean_, std_, None)
 
 
 # get TNSE
