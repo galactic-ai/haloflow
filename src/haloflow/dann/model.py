@@ -3,6 +3,7 @@ Model for the Domain Adversarial Neural Network (DANN) model.
 """
 
 import torch.nn as nn
+import torch
 
 from . import utils as U
 
@@ -12,6 +13,10 @@ def weighted_huber_loss(y_true, y_pred, delta=1.0):
     weights = 1.0 + (y_true - y_true.min()) / (y_true.max() - y_true.min())  
     return (loss * weights).mean()
 
+def weighted_mse_loss(y_true, y_pred, weights):
+    squared_diff = (y_pred - y_true)**2
+    loss = torch.mean(squared_diff * weights)
+    return loss
 
 class DANNModel(nn.Module):
     def __init__(self, input_dim):

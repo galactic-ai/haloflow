@@ -1,12 +1,16 @@
-import haloflow.data as D
+from matplotlib.pyplot import sca
+from scipy.linalg import schur
 import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.metrics import mean_squared_error, r2_score
-from .model import weighted_huber_loss
+
+from .model import weighted_huber_loss, weighted_mse_loss
+from ..schechter import schechter_logmass
+from .. import data as D
 
 
-def evaluate(model, obs, sim, mean_=0, std_=1, device='cpu', dataset='test'):
+def evaluate(model, obs, sim, mean_=0, std_=1, device='cpu', dataset='test', weights=None):
     """Evaluate the model on the test set."""
     # Load the test data
     y_eval, X_eval = D.hf2_centrals(dataset, obs=obs, sim=sim)
@@ -19,11 +23,24 @@ def evaluate(model, obs, sim, mean_=0, std_=1, device='cpu', dataset='test'):
     with torch.no_grad():
         y_pred_tensor, _ = model(X_eval_tensor, 0)
 
-    # criterion = nn.MSELoss()
+    criterion = weighted_mse_loss
     # use huber loss for regression
-    criterion = nn.HuberLoss()
+    
+    # criterion = weighted_mse_loss 
     y_eval_tensor = torch.tensor(y_eval, dtype=torch.float32).to(device)
-    loss = criterion(y_pred_tensor, y_eval_tensor).item()
+    
+    if not weights:
+        weights = schechter_logmass(y_eval[:, 0])
+        max_weight = np.max(weights)
+        min_weight = np.min(weights)
+        if max_weight > min_weight:
+            weights = (weights - min_weight) / (max_weight - min_weight)
+        else:
+            weights = np.ones_like(weights)
+        weights = torch.tensor(weights, dtype=torch.float32).to(device).unsqueeze(1).expand(-1, 2)
+    
+    loss = criterion(y_eval_tensor, y_pred_tensor, weights).item()
+    # loss = criterion(y_eval_tensor, y_pred_tensor).item()
     
     y_pred = y_pred_tensor.cpu().numpy()
     y_eval = y_eval_tensor.cpu().numpy()
