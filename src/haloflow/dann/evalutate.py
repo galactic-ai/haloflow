@@ -30,13 +30,9 @@ def evaluate(model, obs, sim, mean_=0, std_=1, device='cpu', dataset='test', wei
     y_eval_tensor = torch.tensor(y_eval, dtype=torch.float32).to(device)
     
     if not weights:
-        weights = schechter_logmass(y_eval[:, 0])
-        max_weight = np.max(weights)
-        min_weight = np.min(weights)
-        if max_weight > min_weight:
-            weights = (weights - min_weight) / (max_weight - min_weight)
-        else:
-            weights = np.ones_like(weights)
+        weights = 1 / schechter_logmass(y_eval[:, 0])
+        weights = weights / np.min(weights)
+        weights = np.clip(weights, 0, 1e2)
         weights = torch.tensor(weights, dtype=torch.float32).to(device).unsqueeze(1).expand(-1, 2)
     
     loss = criterion(y_eval_tensor, y_pred_tensor, weights).item()

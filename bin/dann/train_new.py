@@ -55,23 +55,16 @@ X = np.concatenate(X)
 domains = np.concatenate(domains)
 counts = np.concatenate(counts)
 
-count_weights = counts / np.unique(counts).sum() 
-sche_weights = schechter_logmass(y[:, 0])
-# print(sche_weights)
-# print(min(sche_weights), max(sche_weights))
-# print(np.log10(sche_weights))
-# input()
+count_weights = 1 / (counts / np.unique(counts).sum()) 
 
-weights = -np.log10(count_weights * sche_weights) + 1e-8
+sche_weights = 1 / schechter_logmass(y[:, 0])
+sche_weights = sche_weights / np.min(sche_weights)
+sche_weights = np.clip(sche_weights, 0, 1e2)
+
+
+weights = count_weights * sche_weights
 print(f"Min weight: {min(weights)}")
 print(f"Max weight: {max(weights)}")
-# weights = count_weights
-# min_weight = min(weights)
-# max_weight = max(weights)
-# if max_weight > min_weight:
-#     weights = (weights - min_weight) / (max_weight - min_weight)
-# else:
-#     weights = np.ones_like(weights)
 
 
 # standardize the data
@@ -137,7 +130,6 @@ for epoch in range(num_epochs):
     # Forward pass
     outputs, domains = model(X_tensor, alpha)
     reg_loss = criterion(y_tensor, outputs, weights) # regression loss
-    # reg_loss = criterion(y_tensor, outputs) # regression loss
     domain_loss = domain_criterion(domains, domains_tensor) # domain classification loss
 
     # evalution

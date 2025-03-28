@@ -125,7 +125,7 @@ def plot_evaluation_results(model, obs, sim, device, model_name, mean_, std_, we
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 6), dpi=150)
 
-    plt.suptitle(f"Predictions for Sims -\> {sim} with {obs} obs")
+    plt.suptitle(f"Predictions for Sims - {sim} with {obs} obs")
 
     ax[0].scatter(y_eval[:, 0], y_pred[:, 0], alpha=0.7, s=5.5)
     ax[0].plot([10, 12.5], [10, 12.5], "k--")
