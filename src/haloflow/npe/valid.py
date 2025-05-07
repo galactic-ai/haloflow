@@ -52,12 +52,12 @@ def validate_npe(train_obs, train_sim,
     if with_dann:
         if 'dann' in fp:
             qphis = U.read_best_ndes(
-                f'h2.dann.v{version}.{train_sim}.{train_obs}',
+                f'h2.dann.v{version}.m{train_sim}.{test_sim}.{train_obs}',
                 n_ensemble=n_ensemble, device=device,
                 dat_dir=data_dir, verbose=True)
         elif 'mmd' in fp:
             qphis = U.read_best_ndes(
-                f'h2.mmd.v{version}.{train_sim}.{train_obs}',
+                f'h2.mmd.v{version}.m{train_sim}.{test_sim}.{train_obs}',
                 n_ensemble=n_ensemble, device=device,
                 dat_dir=data_dir, verbose=True)
     else:
