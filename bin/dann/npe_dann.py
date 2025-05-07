@@ -44,7 +44,7 @@ n_trials    = 1000
 study_name  = f'h2.dann.v2.m{dann_sim}.{sim}.{obs}'
 
 
-output_dir = '../../data/hf2/npe/'
+output_dir = get_dat_dir() + 'hf2/npe/'
 
 npe = NPEOptunaTraining(
         y_train, label_pred, 

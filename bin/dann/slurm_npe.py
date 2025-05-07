@@ -4,7 +4,7 @@ def slurm_sweep(n_cores, obs, dann_sim, sim, hr=12, gpu=True):
     """
     WandB sweep for NPE training with DANN.
     """
-    jname = f"npe.dann.{str(n_cores)}"
+    jname = f"npe.dann.{str(n_cores)}_m{dann_sim}_{sim}_{obs}"
     ofile = f"o/_{jname}"
 
     script = '\n'.join([
@@ -31,7 +31,7 @@ def slurm_sweep(n_cores, obs, dann_sim, sim, hr=12, gpu=True):
         "",
         "cd bin/dann/",
         "",
-        "python npe_dann.py ",
+        f"python npe_dann.py {obs} {sim} {dann_sim}",
         "",
         'now=$(date +"%T")', 
         'echo "end time ... $now"', 
@@ -56,6 +56,5 @@ if __name__ == "__main__":
                     continue
                 print(f"Submitting job for obs: {obs}, sim: {sim}, dann_sim: {dann_sim}")
                 slurm_sweep(n_cores=8, obs=obs, dann_sim=dann_sim, sim=sim, hr=12, gpu=True)
-
 
 
