@@ -23,17 +23,17 @@ torch.cuda.manual_seed_all(42)
 # parse command line arguments
 parser = argparse.ArgumentParser(description='Train a DANN model')
 parser.add_argument('--obs', type=str, default='mags_morph_extra', help='Observation to use')
-parser.add_argument('--sim', type=str, default='TNG50', help='Simulation to use for testing (domain adaptation)')
+parser.add_argument('--sim', type=str, default='TNG_ALL', help='Simulation to use for testing (domain adaptation)')
 
 
 args = parser.parse_args()
 obs = args.obs
 sim = args.sim
 
-all_sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
+all_sims = ['TNG_ALL', 'Eagle100', 'Simba100']
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-MODEL_NAME = f'dann_model_to_{sim}_{obs}'
+MODEL_NAME = f'dann_model_v3_to_{sim}_{obs}'
 FP = get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}.pt'
 
 # %%
@@ -65,7 +65,6 @@ sche_weights = np.clip(sche_weights, 0, 1e2)
 weights = count_weights * sche_weights
 print(f"Min weight: {min(weights)}")
 print(f"Max weight: {max(weights)}")
-
 
 # standardize the data
 mean_ = np.mean(X, axis=0)
