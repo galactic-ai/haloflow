@@ -46,8 +46,9 @@ def slurm_sweep(n_cores, obs, dann_sim, sim, hr=12, gpu=True):
     return None
 
 if __name__ == "__main__":
-    all_sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
-    all_obs = ['mags', 'mags_morph', 'mags_morph_extra']
+    all_sims = ['TNG_ALL', 'Eagle100', 'Simba100']
+    # all_obs = ['mags', 'mags_morph', 'mags_morph_extra']
+    all_obs = ['mags_morph_extra']
 
     for obs in all_obs:
         for sim in all_sims:
