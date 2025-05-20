@@ -1,86 +1,83 @@
 from haloflow import data as D
 from haloflow import util as U
+
+from haloflow.config import get_dat_dir
+from haloflow.dann.evalutate import evaluate
+from haloflow.dann.model import DANNModel
+
 import numpy as np
 import torch
 from tarp import get_tarp_coverage
 
-def validate_npe(train_obs, train_sim, 
-                test_obs, test_sim, 
-                device='cpu',
-                data_dir='/xdisk/chhahn/chhahn/haloflow/hf2/npe', 
-                n_ensemble=5,
-                n_samples=10_000,
-                train_samples=None,
-                version=1,
-                with_dann=False,
-                fp=None):
-    """
-    Function to validate the NDEs trained on the training set
-    on the test set. This function returns the ranks of the
-    test set in the training set, the alpha and ECP of the
-    NDEs on the test set.
-    """
+def validate_npe(
+        npe_train_obs,
+        dann_sim,
+        npe_train_sim,
+        test_obs,
+        test_sim,
+        device='cpu',
+        data_dir='/xdisk/chhahn/chhahn/haloflow/hf2/npe',
+        n_ensemble=5,
+        n_samples=1_000,
+        train_samples=None,
+        version=1,
+        with_dann=False,
+):
 
     # Load test data
-    Y_test, X_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
+    y_test, x_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
 
     if with_dann:
-        if fp is None:
-            # TODO: Need to fix file path to match the new structure
-            fp = f'../../data/hf2/dann/models/dann_model_to_Simba100_{test_obs}_*.pt'
-        
-        if 'dann' in fp:
-            from haloflow.dann.evalutate import evaluate
-            from haloflow.dann.model import DANNModel
-            
-            model = DANNModel(input_dim=X_test.shape[1])
-            model.load_state_dict(torch.load(fp, map_location=device))
-            
-            # remove .pt and add _mean_std.npz
-            fp = fp.replace('.pt', '_mean_std.npz')
-            array = np.load(fp)
-            mean = array['mean']
-            std = array['std']
+        MODEL_NAME = f'dann_model_v3_to_{dann_sim}_{test_obs}'
+        FP = get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}.pt'
+        FP_mean_std = get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}_mean_std.npz'
+        study_name = f'h2.dann.v3.m{dann_sim}.{npe_train_sim}.{npe_train_obs}'
 
-            Y_test, X_test, _, _ = evaluate(model, test_obs, test_sim, device=device, mean_=mean, std_=std)
-        elif 'mmd' in fp:
-            from haloflow.mmd.get_preds import get_mmd_preds
 
-            _, X_test = get_mmd_preds(fp, test_obs, test_sim)
+        input_dim = x_test.shape[1]
+        model = DANNModel(input_dim=input_dim).to(device)
+        model.load_state_dict(torch.load(FP, map_location=device))
 
-    # Load NDEs
+        array = np.load(FP_mean_std)
+        mean_, std_ = array['mean'], array['std']
+
+        y_test, x_test, _, _ = evaluate(
+            model,
+            test_obs,
+            test_sim,
+            device=device,
+            dataset='test',
+            mean_=mean_,
+            std_=std_,
+        )
+
     if with_dann:
-        if 'dann' in fp:
-            qphis = U.read_best_ndes(
-                f'h2.dann.v{version}.m{train_sim}.{test_sim}.{train_obs}',
-                n_ensemble=n_ensemble, device=device,
-                dat_dir=data_dir, verbose=True)
-        elif 'mmd' in fp:
-            qphis = U.read_best_ndes(
-                f'h2.mmd.v{version}.m{train_sim}.{test_sim}.{train_obs}',
-                n_ensemble=n_ensemble, device=device,
-                dat_dir=data_dir, verbose=True)
+        qphis = U.read_best_ndes(
+            study_name,
+            n_ensemble=n_ensemble,
+            device=device,
+            dat_dir=data_dir,
+            verbose=True,
+        )
     else:
         qphis = U.read_best_ndes(
-            f'h2.v{version}.{train_sim}.{train_obs}',
+            f'h2.v{version}.{npe_train_sim}.{npe_train_obs}',
             n_ensemble=n_ensemble, device=device,
             dat_dir=data_dir, verbose=True)
 
-    # Select subset if needed
     if train_samples is not None:
         np.random.seed(42)
-        idx = np.random.choice(len(Y_test), train_samples, replace=False)
-        Y_test = Y_test[idx]
-        X_test = X_test[idx]
+        idx = np.random.choice(len(y_test), train_samples, replace=False)
+        y_test = y_test[idx]
+        x_test = x_test[idx]
 
-    # Convert test data to tensors once (on GPU if available)
-    Y_test_torch = torch.tensor(Y_test, dtype=torch.float32, device=device)
-    X_test_torch = torch.tensor(X_test, dtype=torch.float32, device=device)
+    Y_test_torch = torch.tensor(y_test, dtype=torch.float32, device=device)
+    X_test_torch = torch.tensor(x_test, dtype=torch.float32, device=device)
 
     # Pre-allocate memory
-    num_test_samples = len(Y_test)
-    ranks = np.empty((num_test_samples, Y_test.shape[1]), dtype=np.float32)
-    y_nde = np.empty((num_test_samples, n_samples, Y_test.shape[1]), dtype=np.float32)
+    num_test_samples = len(Y_test_torch)
+    ranks = np.empty((num_test_samples, Y_test_torch.shape[1]), dtype=np.float32)
+    y_nde = np.empty((num_test_samples, n_samples, Y_test_torch.shape[1]), dtype=np.float32)
 
     # Sample in batches to optimize performance
     for i in range(num_test_samples):
@@ -98,7 +95,7 @@ def validate_npe(train_obs, train_sim,
     # Calculate TARP coverages
     ecp, alpha = get_tarp_coverage(
         np.swapaxes(y_nde, 0, 1),
-        Y_test,
+        y_test, # needs to be np.ndarray
         references="random",
         metric="euclidean"
     )

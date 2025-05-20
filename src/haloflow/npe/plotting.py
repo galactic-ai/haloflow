@@ -63,8 +63,13 @@ def plot_coverage(alpha_list, ecp_list, labels, ax=None):
     
     return fig, ax
 
-def plot_true_pred(ax, train_obs, train_sim, 
-                   test_obs, test_sim, device,
+def plot_true_pred(ax, 
+                   train_obs, 
+                   dann_sim,
+                   npe_train_sim, 
+                   test_obs, 
+                   test_sim, 
+                   device,
                    fmt='.C0',
                    mass='halo',
                    use_weights=False,
@@ -93,7 +98,7 @@ def plot_true_pred(ax, train_obs, train_sim,
         For now, it's either 'cpu' or 'cuda'
     mass : str
         Mass to predict. 
-        For now, it's either 'halo' or 'stellar'
+        For now, it's either 'halo' or 'halo'
     use_weights : bool
         Whether to use weights to correct for SMF and HMF implicit prior.
     
@@ -108,7 +113,16 @@ def plot_true_pred(ax, train_obs, train_sim,
     idx = np.random.choice(len(Y_test), 100, replace=False)
     y_true = Y_test[idx]
 
-    _, _, _, y_nde = V.validate_npe(train_obs, train_sim, test_obs, test_sim, device=device, train_samples=100, n_samples=1000, **valid_kwargs)
+    _, _, _, y_nde = V.validate_npe(train_obs, 
+                                  dann_sim, 
+                                  npe_train_sim, 
+                                  test_obs, 
+                                  test_sim, 
+                                  device=device, 
+                                  train_samples=100, 
+                                  n_samples=1000, 
+                                  **valid_kwargs,
+                                  )
 
     if use_weights:
         # apply weights to correct for SMF and HMF implicit prior
@@ -122,10 +136,10 @@ def plot_true_pred(ax, train_obs, train_sim,
             y_sample = y_nde[i, :, :]
             
             # Compute the weights for the M* and Mh prior for this sample
-            w_smf, w_hmf = Corr.w_prior_corr(Y_sam=y_sample, sim=train_sim, bins=10, version=1)
+            w_smf, w_hmf = Corr.w_prior_corr(Y_sam=y_sample, sim=test_sim, bins=10, version=1)
             
             # Resample M* using w_smf
-            resampled_Ms = Corr.weighted_resample(y_sample[:, 0], w_smf)
+            resampled_Ms = Corr.weighted_resample(y_sample[:, 1], w_smf)
             
             # Resample Mh using w_hmf
             resampled_Mh = Corr.weighted_resample(y_sample[:, 1], w_hmf)
@@ -148,7 +162,7 @@ def plot_true_pred(ax, train_obs, train_sim,
     if mass == 'stellar':
         ax.errorbar(y_true[:,0], y_nde_q1[:,0], 
                     yerr=[y_nde_q1[:,0] - y_nde_q0[:,0], y_nde_q2[:,0] - y_nde_q1[:,0]], 
-                    fmt=fmt, label=f'{train_sim.upper()}-{test_sim.upper()}')
+                    fmt=fmt, label=f'{npe_train_sim.upper()}-{test_sim.upper()}')
 
         ax.set_xlabel(r"$\log M_*$ (true)", fontsize=25)
         ax.set_ylabel(r"$\log M_*$ (predicted)", fontsize=25)
@@ -159,7 +173,7 @@ def plot_true_pred(ax, train_obs, train_sim,
     elif mass == 'halo':
         ax.errorbar(y_true[:,1], y_nde_q1[:,1], 
                     yerr=[y_nde_q1[:,1] - y_nde_q0[:,1], y_nde_q2[:,1] - y_nde_q1[:,1]], 
-                    fmt=fmt, label=f'{train_sim.upper()}-{test_sim.upper()}')
+                    fmt=fmt, label=f'{npe_train_sim.upper()}-{test_sim.upper()}')
 
         ax.set_xlabel(r"$\log M_h$ (true)", fontsize=25)
         ax.set_ylabel(r"$\log M_h$ (predicted)", fontsize=25)
@@ -167,6 +181,6 @@ def plot_true_pred(ax, train_obs, train_sim,
         ax.set_xlim(10., 14.)
         ax.set_ylim(10., 14.)
     else:
-        raise ValueError(f"mass should be either 'halo' or 'stellar', but got {mass}")
+        raise ValueError(f"mass should be either 'halo' or 'halo', but got {mass}")
 
     return ax, y_true, y_nde
