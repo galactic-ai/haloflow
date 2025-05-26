@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from haloflow.npe import valid as V
+from haloflow.npe.valid import validate_npe
 from haloflow.npe.plotting import plot_true_pred
 from haloflow.config import get_dat_dir
 
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     npe_train_sim = 'Simba100'
     samples = 1_000
 
-    ranks, alpha, ecp, y_nde = V.validate_npe(
+    ranks, alpha, ecp, y_nde = validate_npe(
         npe_train_obs='mags_morph_extra',
         dann_sim=dann_sim,
         npe_train_sim=npe_train_sim,
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         with_dann=True,
     )
 
-    ranks_2, alpha_2, ecp_2, y_nde_2 = V.validate_npe(
+    ranks_2, alpha_2, ecp_2, y_nde_2 = validate_npe(
         npe_train_obs='mags_morph_extra',
         dann_sim=dann_sim,
         npe_train_sim=npe_train_sim,
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     # plotting
     import matplotlib.pyplot as plt
-    from haloflow.npe.plotting import plot_rank_statistics, plot_coverage
+    from haloflow.npe.plotting import plot_coverage
 
     fig, ax = plot_coverage(
         [alpha, alpha_2],

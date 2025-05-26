@@ -124,6 +124,11 @@ def plot_true_pred(ax,
                                   **valid_kwargs,
                                   )
 
+    if mass == 'stellar':
+        indx = 0
+    elif mass == 'halo':
+        indx = 1
+
     if use_weights:
         # apply weights to correct for SMF and HMF implicit prior
         # Initialize lists to store the resampled M* and Mh values
@@ -137,12 +142,12 @@ def plot_true_pred(ax,
             
             # Compute the weights for the M* and Mh prior for this sample
             w_smf, w_hmf = Corr.w_prior_corr(Y_sam=y_sample, sim=test_sim, bins=10, version=1)
-            
+
             # Resample M* using w_smf
-            resampled_Ms = Corr.weighted_resample(y_sample[:, 1], w_smf)
+            resampled_Ms = Corr.weighted_resample(y_sample[:, indx], w_smf)
             
             # Resample Mh using w_hmf
-            resampled_Mh = Corr.weighted_resample(y_sample[:, 1], w_hmf)
+            resampled_Mh = Corr.weighted_resample(y_sample[:, indx], w_hmf)
             
             # Append the resampled M* and Mh values to the lists
             y_nde_resampled_Ms.append(resampled_Ms)
@@ -160,26 +165,26 @@ def plot_true_pred(ax,
 
     # ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
     if mass == 'stellar':
-        ax.errorbar(y_true[:,0], y_nde_q1[:,0], 
-                    yerr=[y_nde_q1[:,0] - y_nde_q0[:,0], y_nde_q2[:,0] - y_nde_q1[:,0]], 
+        ax.errorbar(y_true[:,indx], y_nde_q1[:,indx], 
+                    yerr=[y_nde_q1[:,indx] - y_nde_q0[:,indx], y_nde_q2[:,indx] - y_nde_q1[:,indx]], 
                     fmt=fmt, label=f'{npe_train_sim.upper()}-{test_sim.upper()}')
 
-        ax.set_xlabel(r"$\log M_*$ (true)", fontsize=25)
-        ax.set_ylabel(r"$\log M_*$ (predicted)", fontsize=25)
+        ax.set_xlabel(r"true $\log M_*$", fontsize=25)
+        ax.set_ylabel(r"inferred $\log M_*$", fontsize=25)
 
         ax.set_xlim(9.5, 12.)
         ax.set_ylim(9.5, 12.)
     
     elif mass == 'halo':
-        ax.errorbar(y_true[:,1], y_nde_q1[:,1], 
-                    yerr=[y_nde_q1[:,1] - y_nde_q0[:,1], y_nde_q2[:,1] - y_nde_q1[:,1]], 
+        ax.errorbar(y_true[:,indx], y_nde_q1[:,indx], 
+                    yerr=[y_nde_q1[:,indx] - y_nde_q0[:,indx], y_nde_q2[:,indx] - y_nde_q1[:,indx]], 
                     fmt=fmt, label=f'{npe_train_sim.upper()}-{test_sim.upper()}')
 
-        ax.set_xlabel(r"$\log M_h$ (true)", fontsize=25)
-        ax.set_ylabel(r"$\log M_h$ (predicted)", fontsize=25)
+        ax.set_xlabel(r"true $\log M_h$", fontsize=25)
+        ax.set_ylabel(r"inferred $\log M_h$", fontsize=25)
 
-        ax.set_xlim(10., 14.)
-        ax.set_ylim(10., 14.)
+        ax.set_xlim(11.3, 14.)
+        ax.set_ylim(11.3, 14.)
     else:
         raise ValueError(f"mass should be either 'halo' or 'halo', but got {mass}")
 
