@@ -10,6 +10,7 @@ import glob
 import numpy as np 
 
 import torch
+import torch.nn as nn
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 
@@ -54,3 +55,14 @@ def get_all_data_from_loader(dataloader):
     all_X = torch.cat(all_X, dim=0)
     all_Y = torch.cat(all_Y, dim=0)
     return all_X, all_Y
+
+def weighted_huber_loss(y_true, y_pred, delta=1.0):
+    criterion = nn.HuberLoss(delta=delta, reduction='mean')
+    loss = criterion(y_pred, y_true)
+    weights = 1.0 + (y_true - y_true.min()) / (y_true.max() - y_true.min())  
+    return (loss * weights).mean()
+
+def weighted_mse_loss(y_true, y_pred, weights):
+    squared_diff = (y_pred - y_true)**2
+    loss = torch.mean(squared_diff * weights)
+    return loss

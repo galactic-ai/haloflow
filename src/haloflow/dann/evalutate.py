@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import mean_squared_error, r2_score
 
-from .model import weighted_huber_loss, weighted_mse_loss
+from ..util import weighted_mse_loss
 from ..schechter import schechter_logmass
 from .. import data as D
 
