@@ -1,9 +1,9 @@
-from haloflow import data as D
-from haloflow import util as U
+from .. import data as D
+from .. import util as U
 
-from haloflow.config import get_dat_dir
-from haloflow.dann.evalutate import evaluate
-from haloflow.dann.model import DANNModel
+from ..config import get_dat_dir
+from ..dann.evalutate import evaluate
+from ..dann.model import DANNModel
 
 import numpy as np
 import torch
@@ -22,6 +22,7 @@ def validate_npe(
         train_samples=None,
         version=1,
         with_dann=False,
+        with_mmd=False,
 ):
 
     # Load test data
@@ -50,8 +51,16 @@ def validate_npe(
             mean_=mean_,
             std_=std_,
         )
+    elif with_mmd:
+        from haloflow.mmd.get_preds import get_mmd_preds
 
-    if with_dann:
+        MODEL_NAME = f'mmd_model_v2_to_{dann_sim}_{test_obs}'
+        FP = get_dat_dir() + f'hf2/mmd/models/{MODEL_NAME}.pt'
+        study_name = f'h2.mmd.v2.m{dann_sim}.{npe_train_sim}.{npe_train_obs}'
+
+        _, x_test = get_mmd_preds(FP, test_obs, test_sim)
+
+    if with_dann or with_mmd:
         qphis = U.read_best_ndes(
             study_name,
             n_ensemble=n_ensemble,
