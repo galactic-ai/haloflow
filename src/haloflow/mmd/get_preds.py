@@ -3,7 +3,7 @@ import numpy as np
 
 from .. import config as C
 from .. import data as D
-from ..mmd import model as M
+from . import models as M
 
 DAT_DIR = C.get_dat_dir()
 ALL_SIMS = ["TNG_ALL", "Eagle100", "Simba100"]
