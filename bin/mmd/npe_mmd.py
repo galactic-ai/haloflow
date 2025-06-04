@@ -1,13 +1,7 @@
 import sys
-from glob import glob
-
-from matplotlib.pyplot import sca
 
 from haloflow.config import get_dat_dir
-from haloflow.util import get_all_data_from_loader
-from haloflow.dann.data_loader import SimulationDataset
 from haloflow.npe.optuna_training import NPEOptunaTraining
-from haloflow.mmd.models import MMDModel
 from haloflow.mmd.get_preds import get_mmd_preds
 import haloflow.data as D
 
@@ -19,11 +13,12 @@ device = ("cuda:0" if cuda else "cpu")
 ##################################################################################
 obs = sys.argv[1]
 sim = sys.argv[2]
-all_sims = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
+dann_sim = sys.argv[3] if len(sys.argv) > 3 else 'Simba100'
+all_sims = ['TNG_ALL', 'Eagle100', 'Simba100']
 
 if sim not in all_sims: raise ValueError
 
-FP = get_dat_dir() + f'hf2/mmd/models/mmd_best_model_to_Simba100_{obs}.pth'
+FP = get_dat_dir() + f'hf2/mmd/models/mmd_model_v2_to_{dann_sim}_{obs}.pt'
 
 ##################################################################################
 # read in training data 
@@ -33,9 +28,10 @@ _, x_test = get_mmd_preds(FP, obs, sim)
 
 # Optuna Parameters
 n_trials    = 1000
-study_name  = 'h2.mmd.v1.%s.%s' % (sim, obs) 
+study_name  = f'h2.mmd.v2.m{dann_sim}.{sim}.{obs}'
+print(f"Running Optuna for {study_name} with {n_trials} trials...")
 
-output_dir = '../../data/hf2/npe/'
+output_dir = get_dat_dir() + 'hf2/npe/'
 
 npe = NPEOptunaTraining(
         y_test, x_test, 

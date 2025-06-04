@@ -1,22 +1,36 @@
-from haloflow.mmd.models import MMDModel
-from haloflow.dann.data_loader import SimulationDataset
-from haloflow.config import get_dat_dir 
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 
-SIMS = ['TNG50', 'TNG100', 'Eagle100', 'Simba100']
-OBS = 'mags'
-TEST_SIM = 'Simba100'
-TRAIN_SIMS = [sim for sim in SIMS if sim != TEST_SIM]
+from haloflow.config import get_dat_dir
+from haloflow.mmd.models import MMDModel
+import haloflow.data as D
 
-FP = get_dat_dir() + f'hf2/mmd/models/mmd_best_model_to_{TEST_SIM}_{OBS}.pth'
-# FP = get_dat_dir() + f'hf2/mmd/models/mmd_best_model_to_TNG50_{OBS}.pth'
 
-sim_dataset = SimulationDataset(SIMS, OBS, get_dat_dir())
-_, test_loader = sim_dataset.get_train_test_loaders(TRAIN_SIMS, TEST_SIM)
-# scaler = sim_dataset.scaler_Y
+SIMS = ['TNG_ALL', 'Eagle100', 'Simba100']
+OBS = 'mags_morph_extra'
+TEST_SIM = 'Eagle100'
+
+# raise ValueError if the test simulation is not in the list of simulations
+if TEST_SIM not in SIMS:
+    raise ValueError(f"Test simulation {TEST_SIM} is not in the list of simulations: {SIMS}")
+
+MODEL_NAME = f'mmd_model_v2_to_{TEST_SIM}_{OBS}'
+FP = get_dat_dir() + f'hf2/mmd/models/{MODEL_NAME}.pt'
+
+# load mean, std normalization parameters
+global_stats = np.load(get_dat_dir() + 'hf2/mmd/models/global_mean_std.npz', allow_pickle=True)
+g_mean = global_stats['mean']
+g_std = global_stats['std']
+
+y_test, X_test = D.hf2_centrals("test", obs=OBS, sim=TEST_SIM)
+X_test = (X_test - g_mean) / g_std
+X_test = torch.tensor(X_test, dtype=torch.float32)
+y_test = torch.tensor(y_test, dtype=torch.float32)
+weights = torch.ones_like(y_test, dtype=torch.float32)
+test_dataset = torch.utils.data.TensorDataset(X_test, y_test, weights)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=512, shuffle=False)
 
 input_dim = next(iter(test_loader))[0].shape[1]
 output_dim = 2
@@ -87,6 +101,7 @@ ax[1].set_ylabel('Predicted Halo Mass')
 ax[1].set_title('Halo Mass Predictions')
 
 plt.tight_layout()
+plt.savefig(f'../../plots/mmd_v2_to_{TEST_SIM}_{OBS}_predictions.png', dpi=300)
 plt.show()
 
 # import shap
