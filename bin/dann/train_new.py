@@ -10,7 +10,8 @@ import haloflow.data as D
 from haloflow.schechter import schechter_logmass
 from haloflow.config import get_dat_dir
 from haloflow.dann.evalutate import evaluate
-from haloflow.dann.model import DANNModel, weighted_mse_loss
+from haloflow.dann.model import DANNModel
+from haloflow.util import weighted_mse_loss
 from haloflow.dann.visualise import plot_evaluation_results
 
 # %%
@@ -33,7 +34,7 @@ sim = args.sim
 all_sims = ['TNG_ALL', 'Eagle100', 'Simba100']
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-MODEL_NAME = f'dann_model_v3_to_{sim}_{obs}'
+MODEL_NAME = f'dann_model_v3_to_{sim}_{obs}_talk'
 FP = get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}.pt'
 
 # %%
