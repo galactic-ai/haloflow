@@ -144,10 +144,10 @@ def plot_true_pred(ax,
             w_smf, w_hmf = Corr.w_prior_corr(Y_sam=y_sample, sim=test_sim, bins=10, version=1)
 
             # Resample M* using w_smf
-            resampled_Ms = Corr.weighted_resample(y_sample[:, indx], w_smf)
+            resampled_Ms = Corr.weighted_resample(y_sample[:, 0], w_smf)
             
             # Resample Mh using w_hmf
-            resampled_Mh = Corr.weighted_resample(y_sample[:, indx], w_hmf)
+            resampled_Mh = Corr.weighted_resample(y_sample[:, 1], w_hmf)
             
             # Append the resampled M* and Mh values to the lists
             y_nde_resampled_Ms.append(resampled_Ms)
