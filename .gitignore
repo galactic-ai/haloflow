@@ -133,3 +133,10 @@ wandb/
 data/
 .ruff_cache/
 plots/
+
+# temp
+ml4ps/
+SIDDA/
+
+*.npz
+*.pth
