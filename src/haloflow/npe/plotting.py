@@ -164,11 +164,11 @@ def plot_true_pred(ax,
     ax.plot([9.5, 14.], [9.5, 14.], c='k', ls='--', label='_nolegend_')
 
     # ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
-    if mass == 'stellar':
-        ax.errorbar(y_true[:,indx], y_nde_q1[:,indx], 
-                    yerr=[y_nde_q1[:,indx] - y_nde_q0[:,indx], y_nde_q2[:,indx] - y_nde_q1[:,indx]], 
-                    fmt=fmt, label=f'{npe_train_sim.upper()}-{test_sim.upper()}')
+    ax.errorbar(y_true[:,indx], y_nde_q1[:,indx], 
+                yerr=[y_nde_q1[:,indx] - y_nde_q0[:,indx], y_nde_q2[:,indx] - y_nde_q1[:,indx]], 
+                fmt=fmt, ms=8, label=f'{npe_train_sim.upper()}-{test_sim.upper()}')
 
+    if mass == 'stellar':
         ax.set_xlabel(r"true $\log M_*$", fontsize=25)
         ax.set_ylabel(r"inferred $\log M_*$", fontsize=25)
 
@@ -176,10 +176,6 @@ def plot_true_pred(ax,
         ax.set_ylim(9.5, 12.)
     
     elif mass == 'halo':
-        ax.errorbar(y_true[:,indx], y_nde_q1[:,indx], 
-                    yerr=[y_nde_q1[:,indx] - y_nde_q0[:,indx], y_nde_q2[:,indx] - y_nde_q1[:,indx]], 
-                    fmt=fmt, label=f'{npe_train_sim.upper()}-{test_sim.upper()}')
-
         ax.set_xlabel(r"true $\log M_h$", fontsize=25)
         ax.set_ylabel(r"inferred $\log M_h$", fontsize=25)
 
