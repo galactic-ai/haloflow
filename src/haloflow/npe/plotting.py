@@ -195,3 +195,46 @@ def plot_true_pred(ax,
         raise ValueError(f"mass should be either 'halo' or 'halo', but got {mass}")
 
     return ax, y_true, y_nde
+
+
+def get_sample_indices(dataset, obs, sim, max_per_bin=15):
+    """Get sample indices for a given dataset to be used for plotting.
+
+    Parameters
+    ----------
+
+    dataset : str
+        Specify training or test data. Specify 'train' or 'test' or 'all.
+    obs : str
+        Specify the observables to include. ('mags', 'mags_morph', 'mags_morph_extra')
+    sim : str
+        Specify the simulation to use. ('TNG100', 'Eagle100', 'TNG50', 'TNG_ALL', 'Simba100')
+    max_per_bin : int
+        Specify the maximum number of samples to include per bin.
+    
+    Returns
+    -------
+    selected_indices : np.ndarray
+        Array of selected indices for the specified dataset.
+    """
+
+    # set random seed
+    np.random.seed(42)
+
+    y, _ = D.hf2_centrals(dataset, obs, sim)
+    halo_masses = y[:, 1]
+
+    hm_bins = np.linspace(11, 15., 10)
+
+    bin_indices = np.digitize(halo_masses, hm_bins)
+
+    selected_indices = []
+    for i in range(1, len(hm_bins)):
+        indices_in_bin = np.where(bin_indices == i)[0]
+        if len(indices_in_bin) > max_per_bin:
+            selected_indices.extend(np.random.choice(indices_in_bin, max_per_bin, replace=False))
+        else:
+            selected_indices.extend(indices_in_bin.tolist())
+    selected_indices = np.array(selected_indices)
+
+    return selected_indices
