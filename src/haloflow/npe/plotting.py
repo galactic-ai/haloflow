@@ -73,6 +73,7 @@ def plot_true_pred(ax,
                    fmt='.C0',
                    mass='halo',
                    use_weights=False,
+                   train_samples=100,
                    **valid_kwargs):
     """
     Plotting script for true vs predicted values.
@@ -108,9 +109,16 @@ def plot_true_pred(ax,
     """
     Y_test, _ = D.hf2_centrals('test', test_obs, test_sim)
 
-    # randomly choose 100 galaxies
     np.random.seed(42)
-    idx = np.random.choice(len(Y_test), 100, replace=False)
+    # instance is a number of samples then do random sampling
+    if isinstance(train_samples, int):
+        # randomly choose 100 galaxies
+        idx = np.random.choice(len(Y_test), train_samples, replace=False)
+    # instance is a list or numpy array of indices
+    elif isinstance(train_samples, (list, np.ndarray)):
+        idx = train_samples
+    else:
+        raise ValueError("train_samples must be an int, list, or np.ndarray")
     y_true = Y_test[idx]
 
     _, _, _, y_nde = V.validate_npe(train_obs, 
@@ -119,8 +127,8 @@ def plot_true_pred(ax,
                                   test_obs, 
                                   test_sim, 
                                   device=device, 
-                                  train_samples=100, 
                                   n_samples=1000, 
+                                  train_samples=train_samples,
                                   **valid_kwargs,
                                   )
 
@@ -166,7 +174,7 @@ def plot_true_pred(ax,
     # ax.text(0.05, 0.95, f'{train_sim.upper()}-{test_sim.upper()}', transform=ax.transAxes, ha='left', va='top', fontsize=20)
     ax.errorbar(y_true[:,indx], y_nde_q1[:,indx], 
                 yerr=[y_nde_q1[:,indx] - y_nde_q0[:,indx], y_nde_q2[:,indx] - y_nde_q1[:,indx]], 
-                fmt=fmt, ms=8, label=f'{npe_train_sim.upper()}-{test_sim.upper()}')
+                fmt=fmt, ms=8, label=f'{npe_train_sim.upper()}-{test_sim.upper()}', alpha=0.7)
 
     if mass == 'stellar':
         ax.set_xlabel(r"true $\log M_*$", fontsize=25)
