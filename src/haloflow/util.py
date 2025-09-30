@@ -66,3 +66,6 @@ def weighted_mse_loss(y_true, y_pred, weights):
     squared_diff = (y_pred - y_true)**2
     loss = torch.mean(squared_diff * weights)
     return loss
+
+def bias_estimate(true, pred, sigma):
+    return np.abs(pred - true) / sigma
