@@ -36,18 +36,19 @@ model.load_state_dict(torch.load(FP, map_location=device))
 array = np.load(FP_mean_std)
 mean_, std_ = array['mean'], array['std']
 
-y_train, label_pred, loss, r2 = evaluate(model, obs, sim, device=device, dataset='train', mean_=mean_, std_=std_)
+y_train, label_pred, loss, r2, cX = evaluate(model, obs, sim, device=device, dataset='train', mean_=mean_, std_=std_)
 print(f"Loss: {loss:.4f}, R2: {r2:.4f}")
 
 # Optuna Parameters
 n_trials    = 1000
-study_name  = f'h2.dann.v3.m{dann_sim}.{sim}.{obs}'
+study_name  = f'h2.dann.v3.m{dann_sim}.{sim}.{obs}.feature.extract'
 
 
 output_dir = get_dat_dir() + 'hf2/npe/'
 
 npe = NPEOptunaTraining(
-        y_train, label_pred, 
+        y_train, 
+        cX, 
         n_trials, 
         study_name,
         output_dir,

@@ -40,4 +40,4 @@ class DANNModel(nn.Module):
         x_rev = U.GradientReversal.apply(x, alpha)
         label = self.class_classifier(x)
         domain = self.domain_classifier(x_rev)
-        return label, domain
+        return label, domain, x

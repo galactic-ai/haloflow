@@ -21,13 +21,14 @@ def evaluate(model, obs, sim, mean_=0, std_=1, device='cpu', dataset='test', wei
     # Evaluate the model
     model.eval()
     with torch.no_grad():
-        y_pred_tensor, _ = model(X_eval_tensor, 0)
+        y_pred_tensor, _, cX = model(X_eval_tensor, 0)
 
     criterion = weighted_mse_loss
     # use huber loss for regression
     
     # criterion = weighted_mse_loss 
     y_eval_tensor = torch.tensor(y_eval, dtype=torch.float32).to(device)
+    cX = cX.cpu().numpy()
     
     if not weights:
         weights = 1 / schechter_logmass(y_eval[:, 0])
@@ -43,7 +44,7 @@ def evaluate(model, obs, sim, mean_=0, std_=1, device='cpu', dataset='test', wei
     
     r2 = 1 - np.sum((y_eval - y_pred)**2) / np.sum((y_eval - np.mean(y_eval))**2)
 
-    return y_eval, y_pred, loss, r2
+    return y_eval, y_pred, loss, r2, cX
 
 
 def evaluate_regression(model, dataloader, device="cuda"):

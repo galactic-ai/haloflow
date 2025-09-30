@@ -32,7 +32,7 @@ def validate_npe(
         MODEL_NAME = f'dann_model_v3_to_{dann_sim}_{test_obs}'
         FP = get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}.pt'
         FP_mean_std = get_dat_dir() + f'hf2/dann/models/{MODEL_NAME}_mean_std.npz'
-        study_name = f'h2.dann.v3.m{dann_sim}.{npe_train_sim}.{npe_train_obs}'
+        study_name = f'h2.dann.v3.m{dann_sim}.{npe_train_sim}.{npe_train_obs}.feature.extract'
 
 
         input_dim = x_test.shape[1]
@@ -42,7 +42,7 @@ def validate_npe(
         array = np.load(FP_mean_std)
         mean_, std_ = array['mean'], array['std']
 
-        y_test, x_test, _, _ = evaluate(
+        y_test, _, _, _, x_test = evaluate(
             model,
             test_obs,
             test_sim,
@@ -76,7 +76,14 @@ def validate_npe(
 
     if train_samples is not None:
         np.random.seed(42)
-        idx = np.random.choice(len(y_test), train_samples, replace=False)
+        # instance is a number of samples then do random sampling
+        if isinstance(train_samples, int):
+            idx = np.random.choice(len(y_test), train_samples, replace=False)
+        # instance is a list or numpy array of indices
+        elif isinstance(train_samples, (list, np.ndarray)):
+            idx = train_samples
+        else:
+            raise ValueError("train_samples must be an int, list, or np.ndarray")
         y_test = y_test[idx]
         x_test = x_test[idx]
 
