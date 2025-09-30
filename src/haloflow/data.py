@@ -70,6 +70,8 @@ def hf2_centrals(dataset, obs, sim='TNG100', version=1):
         return Y[isort][Ntrain:], X[isort][Ntrain:]
     elif dataset == 'all': 
         return Y[isort], X[isort]
+    else:
+        raise ValueError("dataset should be either 'train', 'test' or 'all', but got %s" % dataset)
 
 
 def get_subhalos(dataset, obs, snapshot=91, version=1): 

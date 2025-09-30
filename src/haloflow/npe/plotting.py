@@ -136,6 +136,8 @@ def plot_true_pred(ax,
         indx = 0
     elif mass == 'halo':
         indx = 1
+    else:
+        raise ValueError(f"mass should be either 'stellar' or 'halo', but got {mass}")
 
     if use_weights:
         # apply weights to correct for SMF and HMF implicit prior
