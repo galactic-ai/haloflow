@@ -179,15 +179,15 @@ def plot_true_pred(ax,
                 fmt=fmt, ms=8, label=f'{npe_train_sim.upper()}-{test_sim.upper()}', alpha=0.7)
 
     if mass == 'stellar':
-        ax.set_xlabel(r"true $\log M_*$", fontsize=25)
-        ax.set_ylabel(r"inferred $\log M_*$", fontsize=25)
+        ax.set_xlabel(r"true $\log M_*$", fontsize=20)
+        ax.set_ylabel(r"inferred $\log M_*$", fontsize=20)
 
         ax.set_xlim(9.5, 12.)
         ax.set_ylim(9.5, 12.)
     
     elif mass == 'halo':
-        ax.set_xlabel(r"true $\log M_h$", fontsize=25)
-        ax.set_ylabel(r"inferred $\log M_h$", fontsize=25)
+        ax.set_xlabel(r"true $\log M_{\rm h}$", fontsize=20)
+        ax.set_ylabel(r"inferred $\log M_{\rm h}$", fontsize=20)
 
         ax.set_xlim(11.3, 14.)
         ax.set_ylim(11.3, 14.)

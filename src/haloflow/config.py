@@ -15,12 +15,13 @@ def get_dat_dir():
 def setup_plotting_config():
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['font.family'] = 'serif'
+    mpl.rcParams['font.size'] = 20
     mpl.rcParams['axes.linewidth'] = 1.5
     mpl.rcParams['axes.xmargin'] = 1
-    mpl.rcParams['xtick.labelsize'] = 'x-large'
     mpl.rcParams['xtick.major.size'] = 5
+    mpl.rcParams['xtick.labelsize'] = 16
+    mpl.rcParams['ytick.labelsize'] = 16
     mpl.rcParams['xtick.major.width'] = 1.5
-    mpl.rcParams['ytick.labelsize'] = 'x-large'
     mpl.rcParams['ytick.major.size'] = 5
     mpl.rcParams['ytick.major.width'] = 1.5
     mpl.rcParams['legend.frameon'] = False
