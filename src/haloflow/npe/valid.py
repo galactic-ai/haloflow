@@ -8,6 +8,7 @@ from ..dann.model import DANNModel
 import numpy as np
 import torch
 from tarp import get_tarp_coverage
+from tqdm.auto import tqdm
 
 def validate_npe(
         npe_train_obs,
@@ -26,7 +27,7 @@ def validate_npe(
 ):
 
     # Load test data
-    y_test, x_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
+    y_test, x_test = D.hf2_centrals('all', test_obs, sim=test_sim, version=version)
 
     if with_dann:
         MODEL_NAME = f'dann_model_v3_to_{dann_sim}_{test_obs}'
@@ -47,7 +48,7 @@ def validate_npe(
             test_obs,
             test_sim,
             device=device,
-            dataset='test',
+            dataset='all',
             mean_=mean_,
             std_=std_,
         )
@@ -96,17 +97,19 @@ def validate_npe(
     y_nde = np.empty((num_test_samples, n_samples, Y_test_torch.shape[1]), dtype=np.float32)
 
     # Sample in batches to optimize performance
-    for i in range(num_test_samples):
-        y_samp = torch.cat([
-            qphi.sample((n_samples // len(qphis),), x=X_test_torch[i], show_progress_bars=False)
-            for qphi in qphis
-        ], dim=0)  # Collect all samples at once
+    with tqdm(total=num_test_samples, desc="Validating NPE") as pbar:
+        for i in range(num_test_samples):
+            y_samp = torch.cat([
+                qphi.sample((n_samples // len(qphis),), x=X_test_torch[i], show_progress_bars=False)
+                for qphi in qphis
+            ], dim=0)  # Collect all samples at once
 
-        # Compute ranks in a vectorized way
-        ranks[i] = (y_samp < Y_test_torch[i]).float().mean(dim=0).cpu().numpy()
+            # Compute ranks in a vectorized way
+            ranks[i] = (y_samp < Y_test_torch[i]).float().mean(dim=0).cpu().numpy()
 
-        # Store samples efficiently
-        y_nde[i] = y_samp.cpu().numpy()
+            # Store samples efficiently
+            y_nde[i] = y_samp.cpu().numpy()
+            pbar.update(1)
 
     # Calculate TARP coverages
     ecp, alpha = get_tarp_coverage(
