@@ -6,7 +6,18 @@ and Mh from the SMF and HMF.
 '''
 import numpy as np 
 import warnings 
+from joblib import Parallel, delayed
 from . import data as D 
+from . import util as U
+
+def resample_one(y_sample, test_sim):
+    w_smf, w_hmf = w_prior_corr(
+        Y_sam=y_sample, sim=test_sim, bins=10, version=1
+    )
+    return (
+        weighted_resample(y_sample[:, 0], w_smf),
+        weighted_resample(y_sample[:, 1], w_hmf),
+    )
 
 
 def w_prior_corr(Y_sam, sim, bins=10, version=1): 
@@ -73,3 +84,15 @@ def weighted_resample(data, weights):
     
     # Return the chosen elements
     return data[indices]
+
+def weight_nde(y_nde, test_sim):
+    with U.tqdm_joblib(tqdm(total=y_nde.shape[0], desc="Resampling")):
+        results = Parallel(n_jobs=8)(
+            delayed(resample_one)(y_nde[i], test_sim) for i in range(y_nde.shape[0])
+        )
+
+    y_nde_resampled_Ms, y_nde_resampled_Mh = map(np.array, zip(*results))
+    # Stack the resampled M* and Mh values to get the final resampled array
+    y_nde_resample = np.stack([y_nde_resampled_Ms, y_nde_resampled_Mh], axis=-1)  # Shape: (100, 1000, 2)
+
+    return y_nde_resample

@@ -13,6 +13,10 @@ import torch
 import torch.nn as nn
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
+from tqdm.auto import tqdm
+from joblib import Parallel, delayed
+import contextlib
+import joblib
 
 def read_best_ndes(study_name, n_ensemble=5, device='cpu', dat_dir='/scratch/gpfs/chhahn/haloflow/nde', verbose=False): 
     ''' read best NDEs from dat_dir
@@ -69,3 +73,18 @@ def weighted_mse_loss(y_true, y_pred, weights):
 
 def bias_estimate(true, pred, sigma):
     return np.abs(pred - true) / sigma
+
+@contextlib.contextmanager
+def tqdm_joblib(tqdm_object):
+    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+        def __call__(self, *args, **kwargs):
+            tqdm_object.update(n=self.batch_size)
+            return super().__call__(*args, **kwargs)
+
+    old_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old_callback
+        tqdm_object.close()
