@@ -10,7 +10,7 @@ ALL_SIMS = ["TNG_ALL", "Eagle100", "Simba100"]
 
 
 def get_mmd_preds(fp, obs, sim):
-    y_test, x_test = D.hf2_centrals('all', obs, sim=sim, version=1)
+    y_test, x_test = D.hf2_centrals('test', obs, sim=sim, version=1)
 
     if sim not in ALL_SIMS:
         raise ValueError(f"Simulation {sim} not recognized. Choose from {ALL_SIMS}.")

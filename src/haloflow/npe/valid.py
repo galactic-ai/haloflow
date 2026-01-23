@@ -27,7 +27,7 @@ def validate_npe(
 ):
 
     # Load test data
-    y_test, x_test = D.hf2_centrals('all', test_obs, sim=test_sim, version=version)
+    y_test, x_test = D.hf2_centrals('test', test_obs, sim=test_sim, version=version)
 
     if with_dann:
         MODEL_NAME = f'dann_model_v3_to_{dann_sim}_{test_obs}'
@@ -48,7 +48,7 @@ def validate_npe(
             test_obs,
             test_sim,
             device=device,
-            dataset='all',
+            dataset='test',
             mean_=mean_,
             std_=std_,
         )
