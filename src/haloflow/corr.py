@@ -7,6 +7,7 @@ and Mh from the SMF and HMF.
 import numpy as np 
 import warnings 
 from joblib import Parallel, delayed
+from tqdm.auto import tqdm
 from . import data as D 
 from . import util as U
 
