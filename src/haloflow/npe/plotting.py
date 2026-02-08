@@ -140,35 +140,7 @@ def plot_true_pred(ax,
         raise ValueError(f"mass should be either 'stellar' or 'halo', but got {mass}")
 
     if use_weights:
-        # apply weights to correct for SMF and HMF implicit prior
-        # Initialize lists to store the resampled M* and Mh values
-        y_nde_resampled_Ms = []
-        y_nde_resampled_Mh = []
-
-        # Loop over each sample (i) in the second axis (n_samples)
-        for i in range(y_nde.shape[0]):
-            # Extract the i-th slice of y_nde (M* and Mh values for this sample)
-            y_sample = y_nde[i, :, :]
-            
-            # Compute the weights for the M* and Mh prior for this sample
-            w_smf, w_hmf = Corr.w_prior_corr(Y_sam=y_sample, sim=test_sim, bins=10, version=1)
-
-            # Resample M* using w_smf
-            resampled_Ms = Corr.weighted_resample(y_sample[:, 0], w_smf)
-            
-            # Resample Mh using w_hmf
-            resampled_Mh = Corr.weighted_resample(y_sample[:, 1], w_hmf)
-            
-            # Append the resampled M* and Mh values to the lists
-            y_nde_resampled_Ms.append(resampled_Ms)
-            y_nde_resampled_Mh.append(resampled_Mh)
-
-        # Convert the lists to numpy arrays and combine them into a final array
-        y_nde_resampled_Ms = np.array(y_nde_resampled_Ms)  # Shape: (100, 1000)
-        y_nde_resampled_Mh = np.array(y_nde_resampled_Mh)  # Shape: (100, 1000)
-
-        # Stack the resampled M* and Mh values to get the final resampled array
-        y_nde = np.stack([y_nde_resampled_Ms, y_nde_resampled_Mh], axis=-1)  # Shape: (100, 1000, 2)
+        y_nde = Corr.weight_nde(y_nde, test_sim)
 
     y_nde_q0, y_nde_q1, y_nde_q2 = np.quantile(y_nde, (0.16, 0.5, 0.84), axis=1)
     ax.plot([9.5, 14.], [9.5, 14.], c='k', ls='--', label='_nolegend_')
