@@ -5,6 +5,7 @@ from .. import config as C
 from . import valid as V
 from .. import data as D
 from .. import corr as Corr
+from ..util import truncate_outliers
 
 C.setup_plotting_config()
 
@@ -121,7 +122,7 @@ def plot_true_pred(ax,
         raise ValueError("train_samples must be an int, list, or np.ndarray")
     y_true = Y_test[idx]
 
-    _, _, _, y_nde = V.validate_npe(train_obs, 
+    _, _, _, y_nde_unweighted = V.validate_npe(train_obs, 
                                   dann_sim, 
                                   npe_train_sim, 
                                   test_obs, 
@@ -131,6 +132,7 @@ def plot_true_pred(ax,
                                   train_samples=train_samples,
                                   **valid_kwargs,
                                   )
+    y_nde = truncate_outliers(y_nde_unweighted) # 99th percentile
 
     if mass == 'stellar':
         indx = 0

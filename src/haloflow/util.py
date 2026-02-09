@@ -88,3 +88,31 @@ def tqdm_joblib(tqdm_object):
     finally:
         joblib.parallel.BatchCompletionCallBack = old_callback
         tqdm_object.close()
+
+def truncate_outliers(y, q=0.99, axis=1, keepdims=True, fill_value=0.0):
+    """
+    Truncate outliers in the array `y` by 
+    keeping only the central `q` fraction of the data along the specified axis.
+
+    Parameters
+    ----------
+    y : array-like
+        Input array from which to truncate outliers.
+    q : float, optional
+        Fraction of data to keep (between 0 and 1). Default is 0.99.
+    axis : int, optional
+        Axis along which to compute the quantiles. Default is 1.
+    keepdims : bool, optional
+        Whether to keep the dimensions of the output the same as the input. Default is True.
+    fill_value : float, optional
+        Value to replace outliers with. Default is 0.0.
+    
+    Returns
+    -------
+    array-like
+        Array with outliers truncated.
+    """
+    q_low = np.quantile(y, (1 - q) / 2, axis=axis, keepdims=keepdims)
+    q_high = np.quantile(y, 1 - ((1 - q) / 2), axis=axis, keepdims=keepdims)
+    mask = (y >= q_low) & (y <= q_high)
+    return np.where(mask, y, fill_value)
