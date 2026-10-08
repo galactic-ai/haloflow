@@ -142,7 +142,7 @@ def plot_true_pred(ax,
         raise ValueError(f"mass should be either 'stellar' or 'halo', but got {mass}")
 
     if use_weights:
-        y_nde = Corr.weight_nde(y_nde, test_sim)
+        y_nde = Corr.weight_nde(y_nde, npe_train_sim)
 
     y_nde_q0, y_nde_q1, y_nde_q2 = np.quantile(y_nde, (0.16, 0.5, 0.84), axis=1)
     ax.plot([9.5, 14.], [9.5, 14.], c='k', ls='--', label='_nolegend_')
