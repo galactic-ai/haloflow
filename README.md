@@ -24,7 +24,7 @@ Each paper corresponds to a tagged version of this repository:
 | `v1.0.0` | HaloFlow I (Hahn, Bottrell & Lee 2024, ApJ 968, 90) | NPE on TNG images; photometry + morphology + satellite features |
 | `v2.0.0-alpha.1` | Robust Halo Masses using HaloFlow with Domain Adaptation (NeurIPS 2025 ML4PS workshop) | first DANN/MMD domain-adaptation results |
 | `v2.0.0-rc.1` | HaloFlow II as submitted to ApJ (arXiv:2603.12380) | DA across TNG, EAGLE and SIMBA |
-| `v2.0.0` | HaloFlow II as accepted | revised version; archived on Zenodo |
+| `v2.0.0` | HaloFlow II, revised version (ApJ resubmission) | revised after the referee report; archived on Zenodo |
 
 To check out the code for a given paper: `git checkout <tag>`.
 
