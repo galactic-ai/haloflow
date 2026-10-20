@@ -1,7 +1,8 @@
 # halo**flow**
 [![HaloFlow I](https://img.shields.io/badge/arXiv-2310.04503-b31b1b.svg)](https://arxiv.org/abs/2310.04503)
 [![HaloFlow II](https://img.shields.io/badge/arXiv-2603.12380-b31b1b.svg)](https://arxiv.org/abs/2603.12380)
-<!-- TODO: add Zenodo DOI badge once minted -->
+[![HaloFlow II code](https://img.shields.io/badge/code_v2.0.0-10.5281%2Fzenodo.23497593-blue.svg)](https://doi.org/10.5281/zenodo.23497593)
+[![HaloFlow II data](https://img.shields.io/badge/data-10.5281%2Fzenodo.23497672-blue.svg)](https://doi.org/10.5281/zenodo.23497672)
 
 `haloflow` is a simulation-based inference (SBI) framework for inferring the host
 dark matter halo mass (M<sub>h</sub>), jointly with stellar mass (M<sub>*</sub>), of central
@@ -77,7 +78,7 @@ catalogs themselves are not distributed with this repository.
 <!-- TODO: link for the EAGLE/SIMBA images (ask Connor) -->
 
 The trained NPE ensembles and DA networks, the posterior samples for all test galaxies, and
-machine-readable versions of the paper's tables are archived on Zenodo (DOI: TODO).
+machine-readable versions of the paper's tables are archived on Zenodo ([10.5281/zenodo.23497672](https://doi.org/10.5281/zenodo.23497672)).
 
 ## Reproducing HaloFlow II
 
