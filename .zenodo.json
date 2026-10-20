@@ -1,0 +1,15 @@
+{
+  "title": "HaloFlow II: code for Robust Galaxy Halo Mass Inference with Domain Adaptation",
+  "description": "Code for HaloFlow II (Garuda et al.): simulation-based inference of galaxy stellar and halo masses with domain adaptation (DANN and MMD), including the NPE training and validation and the scripts that produce the paper's tables and figures (bin/hf2_paper).",
+  "upload_type": "software",
+  "license": "MIT",
+  "creators": [
+    {"name": "Garuda, Nikhil", "affiliation": "The University of Texas at Austin", "orcid": "0000-0003-3418-2482"},
+    {"name": "Hahn, ChangHoon", "affiliation": "The University of Texas at Austin", "orcid": "0000-0003-1197-0902"},
+    {"name": "Bottrell, Connor", "affiliation": "University of Western Australia", "orcid": "0000-0003-4758-4501"},
+    {"name": "Lee, Khee-Gan", "affiliation": "Kavli IPMU, The University of Tokyo", "orcid": "0000-0001-9299-5719"}
+  ],
+  "related_identifiers": [
+    {"identifier": "arXiv:2603.12380", "relation": "isSupplementTo", "resource_type": "publication-article"}
+  ]
+}

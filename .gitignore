@@ -140,3 +140,6 @@ SIDDA/
 
 *.npz
 *.pth
+
+# symlink to paper repo
+/paper

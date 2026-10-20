@@ -1,0 +1,5 @@
+# outputs of the scripts in this folder
+*.pdf
+*.png
+*.pkl
+figures/
