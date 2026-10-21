@@ -72,10 +72,10 @@ tests/              consistency checks and scatter-plot tests
 
 The inputs are feature catalogs (`hf2.<sim>.morph_subhalo.csv`) measured with ProFuse from
 synthetic HSC images of central galaxies at z = 0.1 in TNG50, TNG100, EAGLE and SIMBA
-(Bottrell et al. 2024). The synthetic images are public (TNG: the
-[IllustrisTNG website](https://www.tng-project.org/explore/gallery/bottrell23/)); the feature
-catalogs themselves are not distributed with this repository.
-<!-- TODO: link for the EAGLE/SIMBA images (ask Connor) -->
+(Bottrell et al. 2024). The IllustrisTNG images are public on the
+[IllustrisTNG website](https://www.tng-project.org/explore/gallery/bottrell23/); the EAGLE and
+SIMBA images were made for Eisert et al. (2024, 2026) and are available from those authors on
+request. The feature catalogs themselves are not distributed with this repository.
 
 The trained NPE ensembles and DA networks, the posterior samples for all test galaxies, and
 machine-readable versions of the paper's tables are archived on Zenodo ([10.5281/zenodo.23497672](https://doi.org/10.5281/zenodo.23497672)).
